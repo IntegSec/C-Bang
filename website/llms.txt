@@ -8,6 +8,7 @@ C! (pronounced "C-Bang") is an open-source programming language that combines li
 
 - Documentation: https://c-bang.integsec.com/docs.html
 - Getting Started: https://c-bang.integsec.com/getting-started.html
-- GitHub: https://github.com/integsec/c-bang
+- GitHub: https://github.com/integsec/C-Bang
+- Wiki: https://github.com/integsec/C-Bang/wiki
 - Community: https://c-bang.integsec.com/community.html
 - Full AI reference: https://c-bang.integsec.com/llms-full.txt

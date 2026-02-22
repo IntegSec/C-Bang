@@ -326,10 +326,11 @@ C! source files use the `.cb` extension.
 - Website: https://c-bang.integsec.com/
 - Documentation: https://c-bang.integsec.com/docs.html
 - Getting Started: https://c-bang.integsec.com/getting-started.html
-- GitHub Repository: https://github.com/integsec/c-bang
+- GitHub Repository: https://github.com/integsec/C-Bang
 - Community: https://c-bang.integsec.com/community.html
-- Issues: https://github.com/integsec/c-bang/issues
-- Discussions: https://github.com/integsec/c-bang/discussions
+- Issues: https://github.com/integsec/C-Bang/issues
+- Wiki: https://github.com/integsec/C-Bang/wiki
+- Discussions: https://github.com/integsec/C-Bang/discussions
 
 ---
 
