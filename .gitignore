@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (for TS bootstrap compiler)
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Build artifacts
+target/
+*.o
+*.wasm
+*.wat
+
+# Environment
+.env
+.env.local

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation — C! (C-Bang) Programming Language</title>
+    <meta name="description" content="Comprehensive documentation for the C! programming language. Learn about linear types, intent annotations, actor model concurrency, universal deployment, and more.">
+    <meta name="keywords" content="C-Bang documentation, C! docs, programming language reference, linear types, intent annotations, actor model">
+    <link rel="canonical" href="https://c-bang.integsec.com/docs.html">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Documentation — C! (C-Bang) Programming Language">
+    <meta property="og:description" content="Comprehensive documentation for the C! programming language. Learn about linear types, intent annotations, actor model concurrency, and more.">
+    <meta property="og:url" content="https://c-bang.integsec.com/docs.html">
+    <meta property="og:site_name" content="C! Programming Language">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Documentation — C! (C-Bang) Programming Language">
+    <meta name="twitter:description" content="Comprehensive documentation for the C! programming language.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "C! (C-Bang) Documentation",
+        "description": "Comprehensive documentation for the C! programming language.",
+        "url": "https://c-bang.integsec.com/docs.html",
+        "author": {
+            "@type": "Organization",
+            "name": "IntegSec"
+        },
+        "about": {
+            "@type": "SoftwareApplication",
+            "name": "C! (C-Bang)"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <a href="index.html" class="nav-logo" aria-label="C! Homepage">
+                <span class="logo-c">C</span><span class="logo-bang">!</span>
+            </a>
+            <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+            <ul class="nav-links">
+                <li><a href="docs.html" class="active">Docs</a></li>
+                <li><a href="getting-started.html">Get Started</a></li>
+                <li><a href="community.html">Community</a></li>
+                <li>
+                    <a href="https://github.com/integsec/c-bang" class="nav-github" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Star on GitHub
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Page Header -->
+        <section class="page-header" aria-labelledby="docs-heading">
+            <div class="container">
+                <h1 id="docs-heading">Documentation</h1>
+                <p>Everything you need to learn C! and build secure, AI-native applications.</p>
+            </div>
+        </section>
+
+        <!-- Doc Cards Overview -->
+        <section class="section">
+            <div class="container">
+                <div class="doc-cards animate-on-scroll">
+                    <a href="getting-started.html" class="doc-card">
+                        <span class="icon">&#128640;</span>
+                        <h3>Getting Started</h3>
+                        <p>Install the compiler, write your first C! program, and understand the basics in minutes.</p>
+                    </a>
+                    <a href="#type-system" class="doc-card">
+                        <span class="icon">&#128274;</span>
+                        <h3>Type System</h3>
+                        <p>Deep dive into linear types, affine types, refined types, and how they eliminate vulnerability classes.</p>
+                    </a>
+                    <a href="#intent-annotations" class="doc-card">
+                        <span class="icon">&#129302;</span>
+                        <h3>Intent Annotations</h3>
+                        <p>Learn how to write structured intent annotations that AI understands and the compiler verifies.</p>
+                    </a>
+                    <a href="#actors" class="doc-card">
+                        <span class="icon">&#9889;</span>
+                        <h3>Actor Model</h3>
+                        <p>Concurrency without shared state. Typed messages, supervision trees, and fault tolerance.</p>
+                    </a>
+                    <a href="#deployment" class="doc-card">
+                        <span class="icon">&#127760;</span>
+                        <h3>Deployment Targets</h3>
+                        <p>Compile to native binaries, WebAssembly, or blockchain bytecode from a single codebase.</p>
+                    </a>
+                    <a href="#smart-contracts" class="doc-card">
+                        <span class="icon">&#128220;</span>
+                        <h3>Smart Contracts</h3>
+                        <p>Write decentralized applications with reentrancy protection built into the type system.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Documentation Content -->
+        <section class="content-section" id="reference">
+            <div class="container">
+                <div class="content-grid">
+                    <aside class="content-sidebar">
+                        <nav aria-label="Documentation sections">
+                            <ul>
+                                <li><a href="#type-system">Type System</a>
+                                    <ul>
+                                        <li><a href="#linear-types">Linear Types</a></li>
+                                        <li><a href="#affine-types">Affine Types</a></li>
+                                        <li><a href="#refined-types">Refined Types</a></li>
+                                        <li><a href="#sum-types">Sum Types</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="#intent-annotations">Intent Annotations</a></li>
+                                <li><a href="#actors">Actor Model</a></li>
+                                <li><a href="#deployment">Deployment</a></li>
+                                <li><a href="#smart-contracts">Smart Contracts</a></li>
+                                <li><a href="#stdlib">Standard Library</a></li>
+                            </ul>
+                        </nav>
+                    </aside>
+
+                    <div class="content-body">
+                        <!-- Type System -->
+                        <h2 id="type-system">Type System</h2>
+                        <p>The C! type system is the foundation of its security guarantees. It combines linear types, affine types, refined types, and sum types to eliminate entire classes of bugs at compile time.</p>
+
+                        <h3 id="linear-types">Linear Types</h3>
+                        <p>A linear type must be used <strong>exactly once</strong>. This is the core mechanism that prevents double-spend, use-after-free, and resource leaks. When a value of a linear type is consumed (passed to a function, moved into a structure), it cannot be used again.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">linear_example.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm">// Token is a linear type — must be used exactly once</span>
+<span class="kw">fn</span> <span class="fn">transfer</span><span class="par">(</span><span class="var">token</span>: <span class="ty">own Token</span>, <span class="var">to</span>: <span class="ty">Address</span><span class="par">)</span> <span class="op">-></span> <span class="ty">Receipt</span> <span class="par">{</span>
+    <span class="var">ledger</span>.<span class="fn">move</span><span class="par">(</span><span class="var">token</span>, <span class="var">to</span><span class="par">)</span>  <span class="cm">// token consumed here</span>
+<span class="par">}</span>
+
+<span class="kw">fn</span> <span class="fn">example</span><span class="par">()</span> <span class="par">{</span>
+    <span class="kw">let</span> <span class="var">t</span> <span class="op">=</span> <span class="fn">mint_token</span><span class="par">()</span>;
+    <span class="fn">transfer</span><span class="par">(</span><span class="var">t</span>, <span class="var">alice</span><span class="par">)</span>;  <span class="cm">// OK: t is consumed</span>
+    <span class="fn">transfer</span><span class="par">(</span><span class="var">t</span>, <span class="var">bob</span><span class="par">)</span>;    <span class="err">// COMPILE ERROR: t already consumed</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <p>The compiler tracks ownership of every linear value through every code path, including branches and loops. Forgetting to use a linear value is also a compile error, preventing resource leaks.</p>
+
+                        <h3 id="affine-types">Affine Types</h3>
+                        <p>An affine type can be used <strong>at most once</strong>. Unlike linear types, it is safe to drop an affine value without using it. This is useful for optional cleanup or cancellation tokens.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">affine_example.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm">// CancelToken is affine — use at most once</span>
+<span class="kw">fn</span> <span class="fn">start_task</span><span class="par">()</span> <span class="op">-></span> <span class="ty">borrow CancelToken</span> <span class="par">{</span>
+    <span class="kw">let</span> <span class="var">cancel</span> <span class="op">=</span> <span class="fn">spawn_background_work</span><span class="par">()</span>;
+    <span class="kw">return</span> <span class="var">cancel</span>  <span class="cm">// caller may or may not use it</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <h3 id="refined-types">Refined Types</h3>
+                        <p>Refined types carry constraints as part of the type itself. A <code>String{len: 1..100}</code> is not just a string — it is provably between 1 and 100 characters. The compiler enforces these constraints.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">refined_example.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="kw">type</span> <span class="ty">User</span> <span class="par">{</span>
+    <span class="prop">name</span>: <span class="ty">String</span><span class="par">{</span><span class="prop">len</span>: <span class="num">1</span><span class="op">..</span><span class="num">100</span><span class="par">}</span>,
+    <span class="prop">age</span>: <span class="ty">u8</span><span class="par">{</span><span class="prop">range</span>: <span class="num">0</span><span class="op">..</span><span class="num">150</span><span class="par">}</span>,
+    <span class="prop">email</span>: <span class="ty">Email</span>,  <span class="cm">// built-in validated type</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <h3 id="sum-types">Sum Types</h3>
+                        <p>Sum types (also known as tagged unions or algebraic data types) let you define a type that can be one of several variants. The compiler ensures you handle all variants, eliminating null pointer errors and unhandled cases.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">sum_type_example.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="kw">type</span> <span class="ty">Result</span><span class="op">&lt;</span><span class="ty">T</span>, <span class="ty">E</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ty">Ok</span><span class="par">(</span><span class="ty">T</span><span class="par">)</span> <span class="op">|</span> <span class="ty">Err</span><span class="par">(</span><span class="ty">E</span><span class="par">)</span>
+
+<span class="kw">fn</span> <span class="fn">process</span><span class="par">(</span><span class="var">r</span>: <span class="ty">Result</span><span class="op">&lt;</span><span class="ty">User</span>, <span class="ty">DbError</span><span class="op">&gt;</span><span class="par">)</span> <span class="par">{</span>
+    <span class="kw">match</span> <span class="var">r</span> <span class="par">{</span>
+        <span class="ty">Ok</span><span class="par">(</span><span class="var">user</span><span class="par">)</span>  <span class="op">=></span> <span class="fn">greet</span><span class="par">(</span><span class="var">user</span><span class="par">)</span>,
+        <span class="ty">Err</span><span class="par">(</span><span class="var">err</span><span class="par">)</span>  <span class="op">=></span> <span class="fn">log_error</span><span class="par">(</span><span class="var">err</span><span class="par">)</span>,
+    <span class="par">}</span>  <span class="cm">// exhaustive — missing a case is a compile error</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <!-- Intent Annotations -->
+                        <h2 id="intent-annotations">Intent Annotations</h2>
+                        <p>Intent annotations are structured metadata that describe <em>what</em> a function should do, not <em>how</em>. They serve a dual purpose: they allow any AI to instantly understand the codebase, and they allow the compiler to formally verify correctness.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">intent_example.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="ann">#[intent("Transfer tokens between accounts,</span>
+<span class="ann">         ensuring sender has sufficient balance,</span>
+<span class="ann">         atomic — both sides update or neither does")]</span>
+<span class="ann">#[invariant(total_supply_unchanged)]</span>
+<span class="ann">#[pre(balances[from] >= amount)]</span>
+<span class="ann">#[post(balances[to] == old(balances[to]) + amount)]</span>
+<span class="kw">fn</span> <span class="fn">transfer</span><span class="par">(</span>
+    <span class="var">from</span>: <span class="ty">Address</span>,
+    <span class="var">to</span>: <span class="ty">Address</span>,
+    <span class="var">amount</span>: <span class="ty">u256</span>
+<span class="par">)</span> <span class="par">{</span>
+    <span class="cm">// Implementation verified against annotations</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <div class="info-box tip">
+                            <p><strong>AI Workflow:</strong> An AI agent reads the <code>#[intent(...)]</code> annotation, generates the function body, and the compiler verifies the implementation satisfies all <code>#[pre]</code>, <code>#[post]</code>, and <code>#[invariant]</code> conditions. If it compiles, the AI got it right.</p>
+                        </div>
+
+                        <!-- Actor Model -->
+                        <h2 id="actors">Actor Model</h2>
+                        <p>C! uses the actor model for concurrency. Each actor owns its state exclusively, and communication happens through typed messages. There is no shared mutable state, making data races impossible by construction.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">actor_example.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="kw">actor</span> <span class="ty">Counter</span> <span class="par">{</span>
+    <span class="kw">state</span> <span class="var">count</span>: <span class="ty">u64</span> <span class="op">=</span> <span class="num">0</span>
+
+    <span class="kw">on</span> <span class="ty">Increment</span><span class="par">(</span><span class="var">by</span>: <span class="ty">u64</span><span class="par">)</span> <span class="par">{</span>
+        <span class="var">count</span> <span class="op">+=</span> <span class="var">by</span>;
+        <span class="kw">reply</span> <span class="var">count</span>
+    <span class="par">}</span>
+
+    <span class="kw">on</span> <span class="ty">GetCount</span> <span class="par">{</span>
+        <span class="kw">reply</span> <span class="var">count</span>
+    <span class="par">}</span>
+<span class="par">}</span>
+
+<span class="cm">// Supervision tree for fault tolerance</span>
+<span class="kw">supervisor</span> <span class="ty">AppSupervisor</span> <span class="par">{</span>
+    <span class="kw">strategy</span>: <span class="ty">OneForOne</span>,
+    <span class="kw">children</span>: <span class="par">[</span><span class="ty">Counter</span>, <span class="ty">Logger</span>, <span class="ty">Cache</span><span class="par">]</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <!-- Deployment -->
+                        <h2 id="deployment">Deployment Targets</h2>
+                        <p>C! compiles a single codebase to multiple targets without code changes:</p>
+
+                        <ul>
+                            <li><strong>Native binaries</strong> &mdash; High-performance executables for servers and CLI tools</li>
+                            <li><strong>WebAssembly (WASM)</strong> &mdash; Run in browsers and edge environments with near-native speed</li>
+                            <li><strong>Blockchain bytecode</strong> &mdash; Deploy smart contracts to EVM-compatible chains</li>
+                        </ul>
+
+                        <div class="info-box note">
+                            <p><strong>Full-stack shared types:</strong> Your <code>User</code> type defined once is used identically in your backend API handler, your frontend WASM component, and your on-chain contract. No serialization bugs, no schema drift.</p>
+                        </div>
+
+                        <!-- Smart Contracts -->
+                        <h2 id="smart-contracts">Smart Contracts</h2>
+                        <p>C! treats smart contracts as first-class citizens. The linear type system makes reentrancy attacks impossible by construction &mdash; once state is consumed in a transaction, it cannot be accessed again until the transaction completes.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">contract.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="ann">#[contract(evm)]</span>
+<span class="kw">actor</span> <span class="ty">Vault</span> <span class="par">{</span>
+    <span class="kw">state</span> <span class="var">balances</span>: <span class="ty">Map</span><span class="op">&lt;</span><span class="ty">Address</span>, <span class="ty">u256</span><span class="op">&gt;</span>
+
+    <span class="ann">#[payable]</span>
+    <span class="kw">on</span> <span class="ty">Deposit</span><span class="par">()</span> <span class="par">{</span>
+        <span class="var">balances</span><span class="par">[</span><span class="var">msg</span>.<span class="prop">sender</span><span class="par">]</span> <span class="op">+=</span> <span class="var">msg</span>.<span class="prop">value</span>;
+    <span class="par">}</span>
+
+    <span class="kw">on</span> <span class="ty">Withdraw</span><span class="par">(</span><span class="var">amount</span>: <span class="ty">u256</span><span class="par">)</span> <span class="par">{</span>
+        <span class="mac">verify!</span><span class="par">(</span><span class="var">balances</span><span class="par">[</span><span class="var">msg</span>.<span class="prop">sender</span><span class="par">]</span> <span class="op">&gt;=</span> <span class="var">amount</span><span class="par">)</span>;
+        <span class="var">balances</span><span class="par">[</span><span class="var">msg</span>.<span class="prop">sender</span><span class="par">]</span> <span class="op">-=</span> <span class="var">amount</span>;
+        <span class="cm">// State updated BEFORE external call</span>
+        <span class="cm">// Reentrancy impossible: state is linear</span>
+        <span class="fn">send</span><span class="par">(</span><span class="var">msg</span>.<span class="prop">sender</span>, <span class="var">amount</span><span class="par">)</span>;
+    <span class="par">}</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <!-- Standard Library -->
+                        <h2 id="stdlib">Standard Library</h2>
+                        <p>The C! standard library provides core types and utilities, all built on the linear type system:</p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Module</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>std::collections</code></td>
+                                    <td>Vec, Map, Set with ownership-aware APIs</td>
+                                </tr>
+                                <tr>
+                                    <td><code>std::io</code></td>
+                                    <td>File, network, and stream I/O with linear handles</td>
+                                </tr>
+                                <tr>
+                                    <td><code>std::crypto</code></td>
+                                    <td>Hashing, signing, verification primitives</td>
+                                </tr>
+                                <tr>
+                                    <td><code>std::net</code></td>
+                                    <td>HTTP client/server, WebSocket, gRPC</td>
+                                </tr>
+                                <tr>
+                                    <td><code>std::json</code></td>
+                                    <td>Type-safe JSON serialization/deserialization</td>
+                                </tr>
+                                <tr>
+                                    <td><code>std::test</code></td>
+                                    <td>Testing framework with property-based testing</td>
+                                </tr>
+                                <tr>
+                                    <td><code>std::async</code></td>
+                                    <td>Async runtime built on the actor model</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-section" aria-labelledby="docs-cta-heading">
+            <div class="container">
+                <h2 id="docs-cta-heading">Ready to try C!?</h2>
+                <p>Follow our getting started guide to install the compiler and write your first program.</p>
+                <div class="cta-actions">
+                    <a href="getting-started.html" class="btn btn-primary btn-lg">Get Started</a>
+                    <a href="https://github.com/integsec/c-bang" class="btn btn-github btn-lg" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Star on GitHub
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="index.html" class="nav-logo">
+                        <span class="logo-c">C</span><span class="logo-bang">!</span>
+                    </a>
+                    <p>The first programming language designed for AI-human collaboration with security by construction.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Learn</h4>
+                    <ul>
+                        <li><a href="docs.html">Documentation</a></li>
+                        <li><a href="getting-started.html">Getting Started</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="community.html">Contribute</a></li>
+                        <li><a href="https://github.com/integsec/c-bang" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Project</h4>
+                    <ul>
+                        <li><a href="https://github.com/integsec/c-bang/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
+                        <li><a href="https://github.com/integsec/c-bang/blob/main/CODE_OF_CONDUCT.md" target="_blank" rel="noopener noreferrer">Code of Conduct</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2025 IntegSec. C! is open-source software.</span>
+                <a href="https://github.com/integsec/c-bang" target="_blank" rel="noopener noreferrer">github.com/integsec/c-bang</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started — C! (C-Bang) Programming Language</title>
+    <meta name="description" content="Get started with C! in minutes. Install the compiler, write your first program, and learn the fundamentals of AI-native, secure-by-construction programming.">
+    <meta name="keywords" content="C-Bang getting started, C! tutorial, install C-Bang, learn C!, programming tutorial">
+    <link rel="canonical" href="https://c-bang.integsec.com/getting-started.html">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Getting Started — C! (C-Bang) Programming Language">
+    <meta property="og:description" content="Get started with C! in minutes. Install the compiler, write your first program, and learn the fundamentals.">
+    <meta property="og:url" content="https://c-bang.integsec.com/getting-started.html">
+    <meta property="og:site_name" content="C! Programming Language">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Getting Started — C! (C-Bang)">
+    <meta name="twitter:description" content="Install the C! compiler and write your first secure-by-construction program.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Getting Started with C! (C-Bang)",
+        "description": "Install the C! compiler and write your first secure-by-construction program.",
+        "url": "https://c-bang.integsec.com/getting-started.html",
+        "step": [
+            {
+                "@type": "HowToStep",
+                "name": "Install the C! compiler",
+                "text": "Download and install the C! compiler using the install script or by building from source."
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Create a new project",
+                "text": "Use cb init to create a new C! project with the standard directory structure."
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Write your first program",
+                "text": "Create a main.cb file with a main function and build it with cb build."
+            }
+        ]
+    }
+    </script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <a href="index.html" class="nav-logo" aria-label="C! Homepage">
+                <span class="logo-c">C</span><span class="logo-bang">!</span>
+            </a>
+            <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+            <ul class="nav-links">
+                <li><a href="docs.html">Docs</a></li>
+                <li><a href="getting-started.html" class="active">Get Started</a></li>
+                <li><a href="community.html">Community</a></li>
+                <li>
+                    <a href="https://github.com/integsec/c-bang" class="nav-github" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Star on GitHub
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Page Header -->
+        <section class="page-header" aria-labelledby="gs-heading">
+            <div class="container">
+                <h1 id="gs-heading">Getting Started</h1>
+                <p>Install the C! compiler, create your first project, and write secure code in minutes.</p>
+            </div>
+        </section>
+
+        <!-- Content -->
+        <section class="content-section">
+            <div class="container">
+                <div class="content-grid">
+                    <aside class="content-sidebar">
+                        <nav aria-label="Getting started sections">
+                            <ul>
+                                <li><a href="#installation" class="active">Installation</a></li>
+                                <li><a href="#first-project">Your First Project</a></li>
+                                <li><a href="#hello-world">Hello, World!</a></li>
+                                <li><a href="#variables">Variables &amp; Types</a></li>
+                                <li><a href="#functions">Functions</a></li>
+                                <li><a href="#ownership">Ownership &amp; Linear Types</a></li>
+                                <li><a href="#intents">Intent Annotations</a></li>
+                                <li><a href="#building">Building &amp; Running</a></li>
+                                <li><a href="#next-steps">Next Steps</a></li>
+                            </ul>
+                        </nav>
+                    </aside>
+
+                    <div class="content-body">
+                        <!-- Installation -->
+                        <h2 id="installation">Installation</h2>
+                        <p>The C! compiler (<code>cb</code>) can be installed on macOS, Linux, and Windows. Choose the method that works best for you.</p>
+
+                        <h3>Quick Install (Recommended)</h3>
+                        <p>Run the install script to get the latest stable version:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">terminal</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm"># macOS / Linux</span>
+<span class="fn">curl</span> <span class="str">-fsSL https://c-bang.integsec.com/install.sh</span> <span class="op">|</span> <span class="fn">sh</span>
+
+<span class="cm"># Windows (PowerShell)</span>
+<span class="fn">irm</span> <span class="str">https://c-bang.integsec.com/install.ps1</span> <span class="op">|</span> <span class="fn">iex</span></pre>
+                            </div>
+                        </div>
+
+                        <h3>Build from Source</h3>
+                        <p>If you prefer to build from source or want to contribute to the compiler:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">terminal</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="fn">git</span> clone https://github.com/integsec/c-bang.git
+<span class="fn">cd</span> c-bang
+<span class="fn">make</span> install</pre>
+                            </div>
+                        </div>
+
+                        <h3>Verify Installation</h3>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">terminal</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="fn">cb</span> <span class="str">--version</span>
+<span class="cm"># C! compiler v0.1.0 (c-bang 2025)</span></pre>
+                            </div>
+                        </div>
+
+                        <!-- First Project -->
+                        <h2 id="first-project">Your First Project</h2>
+                        <p>Create a new C! project using the <code>cb init</code> command:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">terminal</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="fn">cb</span> init my-project
+<span class="fn">cd</span> my-project</pre>
+                            </div>
+                        </div>
+
+                        <p>This creates a project with the following structure:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">project structure</span>
+                            </div>
+                            <div class="code-body">
+<pre>my-project/
+  <span class="ty">cb.toml</span>        <span class="cm"># Project configuration</span>
+  <span class="ty">src/</span>
+    <span class="ty">main.cb</span>    <span class="cm"># Entry point</span>
+  <span class="ty">tests/</span>
+    <span class="ty">main_test.cb</span></pre>
+                            </div>
+                        </div>
+
+                        <!-- Hello World -->
+                        <h2 id="hello-world">Hello, World!</h2>
+                        <p>Open <code>src/main.cb</code> and you will see the generated starter code:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">src/main.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="ann">#[intent("Application entry point")]</span>
+<span class="kw">fn</span> <span class="fn">main</span><span class="par">()</span> <span class="par">{</span>
+    <span class="fn">println</span><span class="par">(</span><span class="str">"Hello, C! world!"</span><span class="par">)</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <p>Build and run it:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">terminal</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="fn">cb</span> run
+<span class="cm"># Hello, C! world!</span></pre>
+                            </div>
+                        </div>
+
+                        <!-- Variables & Types -->
+                        <h2 id="variables">Variables &amp; Types</h2>
+                        <p>C! uses <code>let</code> for immutable bindings and <code>let mut</code> for mutable ones. Types are inferred but can be annotated explicitly.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">variables.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm">// Immutable binding (default)</span>
+<span class="kw">let</span> <span class="var">name</span> <span class="op">=</span> <span class="str">"Alice"</span>
+<span class="kw">let</span> <span class="var">age</span>: <span class="ty">u32</span> <span class="op">=</span> <span class="num">30</span>
+
+<span class="cm">// Mutable binding</span>
+<span class="kw">let</span> <span class="kw">mut</span> <span class="var">counter</span> <span class="op">=</span> <span class="num">0</span>
+<span class="var">counter</span> <span class="op">+=</span> <span class="num">1</span>
+
+<span class="cm">// Refined types with constraints</span>
+<span class="kw">let</span> <span class="var">port</span>: <span class="ty">u16</span><span class="par">{</span><span class="prop">range</span>: <span class="num">1024</span><span class="op">..</span><span class="num">65535</span><span class="par">}</span> <span class="op">=</span> <span class="num">8080</span>
+
+<span class="cm">// Sum types</span>
+<span class="kw">let</span> <span class="var">result</span>: <span class="ty">Result</span><span class="op">&lt;</span><span class="ty">String</span>, <span class="ty">Error</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ty">Ok</span><span class="par">(</span><span class="str">"success"</span><span class="par">)</span></pre>
+                            </div>
+                        </div>
+
+                        <div class="info-box tip">
+                            <p><strong>No null, ever.</strong> C! has no null or nil value. Use <code>Option&lt;T&gt;</code> (which is <code>Some(T) | None</code>) when a value might be absent. The compiler enforces you handle both cases.</p>
+                        </div>
+
+                        <!-- Functions -->
+                        <h2 id="functions">Functions</h2>
+                        <p>Functions are defined with <code>fn</code>. Parameters have explicit types, and the return type follows the <code>-&gt;</code> arrow.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">functions.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="ann">#[intent("Calculate the area of a rectangle")]</span>
+<span class="ann">#[pre(width > 0 && height > 0)]</span>
+<span class="ann">#[post(result == width * height)]</span>
+<span class="kw">fn</span> <span class="fn">area</span><span class="par">(</span><span class="var">width</span>: <span class="ty">f64</span>, <span class="var">height</span>: <span class="ty">f64</span><span class="par">)</span> <span class="op">-></span> <span class="ty">f64</span> <span class="par">{</span>
+    <span class="var">width</span> <span class="op">*</span> <span class="var">height</span>
+<span class="par">}</span>
+
+<span class="cm">// Generic functions</span>
+<span class="kw">fn</span> <span class="fn">first</span><span class="op">&lt;</span><span class="ty">T</span><span class="op">&gt;</span><span class="par">(</span><span class="var">items</span>: <span class="ty">Vec</span><span class="op">&lt;</span><span class="ty">T</span><span class="op">&gt;</span><span class="par">)</span> <span class="op">-></span> <span class="ty">Option</span><span class="op">&lt;</span><span class="ty">T</span><span class="op">&gt;</span> <span class="par">{</span>
+    <span class="kw">match</span> <span class="var">items</span>.<span class="fn">len</span><span class="par">()</span> <span class="par">{</span>
+        <span class="num">0</span> <span class="op">=></span> <span class="ty">None</span>,
+        <span class="var">_</span> <span class="op">=></span> <span class="ty">Some</span><span class="par">(</span><span class="var">items</span><span class="par">[</span><span class="num">0</span><span class="par">]</span><span class="par">)</span>,
+    <span class="par">}</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <!-- Ownership & Linear Types -->
+                        <h2 id="ownership">Ownership &amp; Linear Types</h2>
+                        <p>This is the most important concept in C!. Every value has an ownership qualifier that determines how it can be used:</p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Qualifier</th>
+                                    <th>Meaning</th>
+                                    <th>Use count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>own</code></td>
+                                    <td>Linear ownership — value is consumed on use</td>
+                                    <td>Exactly once</td>
+                                </tr>
+                                <tr>
+                                    <td><code>borrow</code></td>
+                                    <td>Affine — can be used at most once, safe to drop</td>
+                                    <td>At most once</td>
+                                </tr>
+                                <tr>
+                                    <td><code>&amp;</code></td>
+                                    <td>Shared immutable reference</td>
+                                    <td>Unlimited reads</td>
+                                </tr>
+                                <tr>
+                                    <td><code>&amp;mut</code></td>
+                                    <td>Exclusive mutable reference</td>
+                                    <td>One writer, no readers</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">ownership.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm">// 'own' means this function consumes the file handle</span>
+<span class="kw">fn</span> <span class="fn">close_file</span><span class="par">(</span><span class="var">f</span>: <span class="ty">own File</span><span class="par">)</span> <span class="par">{</span>
+    <span class="var">f</span>.<span class="fn">flush</span><span class="par">()</span>;
+    <span class="var">f</span>.<span class="fn">close</span><span class="par">()</span>;  <span class="cm">// f is consumed</span>
+<span class="par">}</span>
+
+<span class="kw">fn</span> <span class="fn">example</span><span class="par">()</span> <span class="par">{</span>
+    <span class="kw">let</span> <span class="var">file</span> <span class="op">=</span> <span class="fn">open</span><span class="par">(</span><span class="str">"data.txt"</span><span class="par">)</span>;
+    <span class="fn">close_file</span><span class="par">(</span><span class="var">file</span><span class="par">)</span>;
+    <span class="cm">// file can no longer be used here</span>
+    <span class="cm">// file.read()  <-- COMPILE ERROR</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <div class="info-box note">
+                            <p><strong>Why this matters:</strong> Linear types eliminate entire vulnerability classes. Use-after-free? Impossible &mdash; the compiler won't let you use a consumed value. Resource leak? Impossible &mdash; the compiler won't let you forget to use a linear value. Double-spend? Impossible &mdash; you literally cannot use a token twice.</p>
+                        </div>
+
+                        <!-- Intent Annotations -->
+                        <h2 id="intents">Intent Annotations</h2>
+                        <p>Intent annotations describe <em>what</em> your code should do. They serve two purposes: AI readability and formal verification.</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">intents.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="ann">#[intent("Sort a list of numbers in ascending order")]</span>
+<span class="ann">#[post(result.is_sorted())]</span>
+<span class="ann">#[post(result.len() == input.len())]</span>
+<span class="kw">fn</span> <span class="fn">sort</span><span class="par">(</span><span class="var">input</span>: <span class="ty">Vec</span><span class="op">&lt;</span><span class="ty">i64</span><span class="op">&gt;</span><span class="par">)</span> <span class="op">-></span> <span class="ty">Vec</span><span class="op">&lt;</span><span class="ty">i64</span><span class="op">&gt;</span> <span class="par">{</span>
+    <span class="cm">// AI can generate the implementation</span>
+    <span class="cm">// Compiler verifies it satisfies the postconditions</span>
+    <span class="var">input</span>.<span class="fn">merge_sort</span><span class="par">()</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <p>Available annotation types:</p>
+                        <ul>
+                            <li><code>#[intent("...")]</code> &mdash; Natural-language description of purpose</li>
+                            <li><code>#[pre(condition)]</code> &mdash; Precondition that must hold before execution</li>
+                            <li><code>#[post(condition)]</code> &mdash; Postcondition that must hold after execution</li>
+                            <li><code>#[invariant(condition)]</code> &mdash; Condition that must hold throughout execution</li>
+                        </ul>
+
+                        <!-- Building & Running -->
+                        <h2 id="building">Building &amp; Running</h2>
+                        <p>The <code>cb</code> command-line tool handles building, running, and testing:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">terminal</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm"># Build for native target</span>
+<span class="fn">cb</span> build
+
+<span class="cm"># Build and run</span>
+<span class="fn">cb</span> run
+
+<span class="cm"># Run tests</span>
+<span class="fn">cb</span> test
+
+<span class="cm"># Build for WebAssembly</span>
+<span class="fn">cb</span> build <span class="str">--target wasm</span>
+
+<span class="cm"># Build smart contract</span>
+<span class="fn">cb</span> build <span class="str">--target evm</span>
+
+<span class="cm"># Format code</span>
+<span class="fn">cb</span> fmt
+
+<span class="cm"># Check without building</span>
+<span class="fn">cb</span> check</pre>
+                            </div>
+                        </div>
+
+                        <!-- Next Steps -->
+                        <h2 id="next-steps">Next Steps</h2>
+                        <p>Now that you have the basics, explore these resources to deepen your understanding:</p>
+
+                        <div class="doc-cards" style="margin-top: 24px;">
+                            <a href="docs.html#type-system" class="doc-card">
+                                <span class="icon">&#128274;</span>
+                                <h3>Type System Deep Dive</h3>
+                                <p>Master linear types, refined types, and sum types.</p>
+                            </a>
+                            <a href="docs.html#actors" class="doc-card">
+                                <span class="icon">&#9889;</span>
+                                <h3>Actor Model</h3>
+                                <p>Build concurrent applications with isolated state.</p>
+                            </a>
+                            <a href="community.html" class="doc-card">
+                                <span class="icon">&#129309;</span>
+                                <h3>Join the Community</h3>
+                                <p>Contribute to C! as a human or AI developer.</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-section" aria-labelledby="gs-cta-heading">
+            <div class="container">
+                <h2 id="gs-cta-heading">Build something amazing</h2>
+                <p>C! is open source and ready for contributors. Your first pull request is welcome &mdash; whether you're human or AI.</p>
+                <div class="cta-actions">
+                    <a href="https://github.com/integsec/c-bang" class="btn btn-github btn-lg" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Star on GitHub
+                    </a>
+                    <a href="community.html" class="btn btn-secondary btn-lg">Join the Community</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="index.html" class="nav-logo">
+                        <span class="logo-c">C</span><span class="logo-bang">!</span>
+                    </a>
+                    <p>The first programming language designed for AI-human collaboration with security by construction.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Learn</h4>
+                    <ul>
+                        <li><a href="docs.html">Documentation</a></li>
+                        <li><a href="getting-started.html">Getting Started</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="community.html">Contribute</a></li>
+                        <li><a href="https://github.com/integsec/c-bang" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Project</h4>
+                    <ul>
+                        <li><a href="https://github.com/integsec/c-bang/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
+                        <li><a href="https://github.com/integsec/c-bang/blob/main/CODE_OF_CONDUCT.md" target="_blank" rel="noopener noreferrer">Code of Conduct</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2025 IntegSec. C! is open-source software.</span>
+                <a href="https://github.com/integsec/c-bang" target="_blank" rel="noopener noreferrer">github.com/integsec/c-bang</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

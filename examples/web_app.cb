@@ -1,0 +1,121 @@
+// web_app.cb — Full-stack web application in C!
+//
+// Demonstrates one language across backend, frontend, and smart contracts.
+// Shared types ensure the entire stack stays in sync.
+
+// === SHARED TYPES ===
+// Used by backend, frontend, AND smart contracts
+
+type UserId = UUID
+type Email = String{matches: r"^[^@]+@[^@]+\.[^@]+$"}
+type Role = Admin | Editor | Viewer
+
+type User {
+    id: UserId,
+    name: String{len: 1..100},
+    email: Email,
+    role: Role,
+}
+
+type ApiError =
+    | NotFound(String)
+    | Unauthorized
+    | ValidationError(Vec<FieldError>)
+
+// === BACKEND (compiles to native binary) ===
+
+server App {
+    bind: "0.0.0.0:8080"
+
+    middleware [
+        Cors { origins: ["https://myapp.com"] },
+        RateLimit { max: 100 per .minute },
+        Auth { strategy: JWT },
+    ]
+
+    #[intent("Retrieve a user by ID. Requires at least Viewer role.")]
+    #[get("/users/:id")]
+    #[auth(Role::Viewer)]
+    fn get_user(id: UserId) -> Result<User, ApiError> with Database {
+        db.find::<User>(id)
+          .ok_or(NotFound("User not found"))
+    }
+
+    #[intent("Create a new user. Admin only. Validates all fields.")]
+    #[post("/users")]
+    #[auth(Role::Admin)]
+    #[validate]
+    fn create_user(body: User) -> Result<User, ApiError> with Database {
+        db.insert(body)
+    }
+
+    #[ws("/feed")]
+    fn live_feed(conn: WebSocket, user: AuthUser) {
+        let feed = spawn FeedActor(user.id);
+        conn.pipe(feed);
+    }
+}
+
+// === FRONTEND (compiles to WASM, runs in browser) ===
+
+state AppState {
+    current_user: Option<User> = None,
+    theme: Theme = Theme::Light,
+}
+
+component UserProfile(user: User) {
+    style {
+        .profile { padding: 2rem; border-radius: 8px; }
+        .name { font-size: 1.5rem; font-weight: bold; }
+        .email { color: #666; }
+    }
+
+    <div class="profile">
+        <h1 class="name">{user.name}</h1>
+        <p class="email">{user.email}</p>
+        <RoleBadge role={user.role} />
+    </div>
+}
+
+component RoleBadge(role: Role) {
+    let (color, label) = match role {
+        Admin  => ("red", "Administrator"),
+        Editor => ("blue", "Editor"),
+        Viewer => ("gray", "Viewer"),
+    };
+
+    <span style="color: {color}; font-weight: bold;">
+        {label}
+    </span>
+}
+
+router {
+    "/"           => HomePage,
+    "/users/:id"  => UserProfile(id),
+    "/settings"   => Settings [auth: Role::Viewer],
+    _             => NotFound,
+}
+
+// === SMART CONTRACT (compiles to EVM bytecode) ===
+
+contract UserRegistry {
+    state users: Map<Address, User>
+    state admin: Address
+
+    init() {
+        admin = caller;
+    }
+
+    #[intent("Register a user on-chain. Only admin can register.")]
+    pub fn register(user: User) -> Result<()> {
+        verify!(caller == admin, "Only admin can register users");
+        verify!(!users.contains(caller), "User already registered");
+        users[caller] = user;
+        emit UserRegistered(caller, user.name);
+        Ok(())
+    }
+
+    pub pure fn get_user(addr: Address) -> Option<User> {
+        users.get(addr)
+    }
+}

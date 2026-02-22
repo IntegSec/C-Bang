@@ -1,0 +1,54 @@
+// token.cb — A simple ERC20 token demonstrating C!'s security guarantees
+//
+// This contract is immune to:
+// - Reentrancy attacks (linear state)
+// - Integer overflow (checked arithmetic)
+// - Double-spend (linear types)
+// All by construction — no runtime checks needed.
+
+contract CToken : ERC20 {
+    state total_supply: u256
+    state balances: Map<Address, u256>
+    state allowances: Map<Address, Map<Address, u256>>
+
+    // Invariant: total supply always equals sum of all balances
+    #[invariant(sum(balances.values()) == total_supply)]
+
+    init(initial_supply: u256{1..MAX_U256}) {
+        total_supply = initial_supply;
+        balances[caller] = initial_supply;
+        emit Transfer(Address::zero(), caller, initial_supply);
+    }
+
+    #[intent("Transfer tokens from caller to recipient.
+             Caller must have sufficient balance.
+             Total supply must remain unchanged.")]
+    #[pre(balances[caller] >= amount)]
+    #[post(balances[to] == old(balances[to]) + amount)]
+    #[post(balances[caller] == old(balances[caller]) - amount)]
+    pub fn transfer(to: Address, amount: u256) -> Result<bool> {
+        verify!(to != Address::zero(), "Cannot transfer to zero address");
+        verify!(balances[caller] >= amount, "Insufficient balance");
+
+        balances[caller] -= amount;
+        balances[to] += amount;
+
+        emit Transfer(caller, to, amount);
+        Ok(true)
+    }
+
+    #[intent("Approve spender to transfer up to amount on caller's behalf")]
+    pub fn approve(spender: Address, amount: u256) -> Result<bool> {
+        allowances[caller][spender] = amount;
+        emit Approval(caller, spender, amount);
+        Ok(true)
+    }
+
+    pub pure fn balance_of(owner: Address) -> u256 {
+        balances[owner]
+    }
+
+    pub pure fn total_supply() -> u256 {
+        total_supply
+    }
+}

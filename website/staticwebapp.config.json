@@ -1,0 +1,52 @@
+{
+    "routes": [
+        {
+            "route": "/docs",
+            "rewrite": "/docs.html"
+        },
+        {
+            "route": "/getting-started",
+            "rewrite": "/getting-started.html"
+        },
+        {
+            "route": "/community",
+            "rewrite": "/community.html"
+        }
+    ],
+    "navigationFallback": {
+        "rewrite": "/index.html",
+        "exclude": [
+            "/style.css",
+            "/script.js",
+            "/sitemap.xml",
+            "/robots.txt",
+            "/llms.txt",
+            "/llms-full.txt",
+            "*.ico",
+            "*.png",
+            "*.jpg",
+            "*.svg",
+            "*.woff",
+            "*.woff2"
+        ]
+    },
+    "globalHeaders": {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'"
+    },
+    "responseOverrides": {
+        "404": {
+            "rewrite": "/index.html",
+            "statusCode": 200
+        }
+    },
+    "mimeTypes": {
+        ".txt": "text/plain; charset=utf-8",
+        ".xml": "application/xml",
+        ".json": "application/json"
+    }
+}

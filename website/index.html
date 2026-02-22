@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C! (C-Bang) — The AI-Native Programming Language with Security by Construction</title>
+    <meta name="description" content="C! is the first programming language designed for AI-human collaboration. Linear types eliminate entire vulnerability classes by construction. One codebase deploys to native, WebAssembly, and blockchain.">
+    <meta name="keywords" content="C-Bang, C!, programming language, AI-native, secure programming, linear types, WebAssembly, smart contracts, actor model, type safety">
+    <link rel="canonical" href="https://c-bang.integsec.com/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="C! (C-Bang) — The AI-Native Programming Language">
+    <meta property="og:description" content="The first programming language designed for AI-human collaboration with security by construction. Linear types, intent annotations, universal deployment.">
+    <meta property="og:url" content="https://c-bang.integsec.com/">
+    <meta property="og:site_name" content="C! Programming Language">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="C! (C-Bang) — The AI-Native Programming Language">
+    <meta name="twitter:description" content="The first programming language designed for AI-human collaboration with security by construction.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "C! (C-Bang)",
+        "alternateName": "C-Bang",
+        "description": "The first programming language designed for AI-human collaboration with security by construction.",
+        "url": "https://c-bang.integsec.com/",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "softwareHelp": {
+            "@type": "WebPage",
+            "url": "https://c-bang.integsec.com/docs.html"
+        },
+        "codeRepository": "https://github.com/integsec/c-bang",
+        "license": "https://opensource.org/licenses/MIT",
+        "programmingLanguage": "C!",
+        "author": {
+            "@type": "Organization",
+            "name": "IntegSec",
+            "url": "https://integsec.com"
+        }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "C! Programming Language",
+        "url": "https://c-bang.integsec.com/",
+        "description": "Official website of the C! (C-Bang) programming language — AI-native, secure by construction."
+    }
+    </script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <a href="index.html" class="nav-logo" aria-label="C! Homepage">
+                <span class="logo-c">C</span><span class="logo-bang">!</span>
+            </a>
+            <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+            <ul class="nav-links">
+                <li><a href="docs.html">Docs</a></li>
+                <li><a href="getting-started.html">Get Started</a></li>
+                <li><a href="community.html">Community</a></li>
+                <li>
+                    <a href="https://github.com/integsec/c-bang" class="nav-github" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Star on GitHub
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero" aria-labelledby="hero-heading">
+            <div class="container">
+                <div class="hero-grid">
+                    <div>
+                        <div class="hero-badge">
+                            <span class="dot"></span>
+                            Open Source &mdash; Now in Development
+                        </div>
+                        <h1 id="hero-heading">
+                            <span class="gradient-text">AI-native.</span><br>
+                            <span class="green-text">Secure by construction.</span>
+                        </h1>
+                        <p class="hero-subtitle">
+                            C! is the first programming language designed from the ground up for AI-human collaboration. Linear types eliminate entire vulnerability classes. One codebase deploys everywhere.
+                        </p>
+                        <div class="hero-actions">
+                            <a href="getting-started.html" class="btn btn-primary btn-lg">Get Started</a>
+                            <a href="https://github.com/integsec/c-bang" class="btn btn-github btn-lg" target="_blank" rel="noopener noreferrer">
+                                <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                                Star on GitHub
+                            </a>
+                        </div>
+                        <div class="hero-stats">
+                            <div class="hero-stat">
+                                <div class="hero-stat-value"><span class="accent">10+</span></div>
+                                <div class="hero-stat-label">Vulnerability classes eliminated</div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-value"><span class="accent">3</span></div>
+                                <div class="hero-stat-label">Deployment targets</div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-value"><span class="accent">1</span></div>
+                                <div class="hero-stat-label">Unified codebase</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hero-code">
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">wallet.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm">// Linear types prevent double-spend</span>
+<span class="kw">fn</span> <span class="fn">transfer</span><span class="par">(</span><span class="var">token</span>: <span class="ty">own Token</span>, <span class="var">to</span>: <span class="ty">Address</span><span class="par">)</span> <span class="op">-></span> <span class="ty">Receipt</span> <span class="par">{</span>
+    <span class="var">ledger</span>.<span class="fn">move</span><span class="par">(</span><span class="var">token</span>, <span class="var">to</span><span class="par">)</span>  <span class="cm">// token consumed</span>
+<span class="par">}</span>
+
+<span class="kw">fn</span> <span class="fn">bad</span><span class="par">()</span> <span class="par">{</span>
+    <span class="kw">let</span> <span class="var">t</span> <span class="op">=</span> <span class="fn">mint_token</span><span class="par">()</span>;
+    <span class="fn">transfer</span><span class="par">(</span><span class="var">t</span>, <span class="var">alice</span><span class="par">)</span>;  <span class="cm">// t consumed</span>
+    <span class="fn">transfer</span><span class="par">(</span><span class="var">t</span>, <span class="var">bob</span><span class="par">)</span>;    <span class="err">// COMPILE ERROR: t already consumed</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Security by Construction Section -->
+        <section class="section section-dark" id="security" aria-labelledby="security-heading">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-label">Security by Construction</span>
+                    <h2 id="security-heading">Entire vulnerability classes, eliminated at compile time</h2>
+                    <p>Not by discipline. Not by linting. Not by auditing. By the type system itself. If it compiles, these bugs are structurally impossible.</p>
+                </div>
+                <div class="security-grid animate-on-scroll">
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Buffer overflows
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Use-after-free
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Double-spend
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Reentrancy attacks
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        SQL injection
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Cross-site scripting
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Data races
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Integer overflow
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Null pointer deref
+                    </div>
+                    <div class="security-badge">
+                        <span class="icon">&#10003;</span>
+                        Resource leaks
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="section" id="features" aria-labelledby="features-heading">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-label">Why C!</span>
+                    <h2 id="features-heading">Built for the future of software</h2>
+                    <p>C! brings together ideas that have never existed in a single language before.</p>
+                </div>
+                <div class="features-grid">
+                    <article class="feature-card animate-on-scroll">
+                        <div class="feature-icon green">&#128274;</div>
+                        <h3>Linear Type System</h3>
+                        <p>Every value has exactly one owner. Consumed values cannot be reused. Buffer overflows, use-after-free, double-spend &mdash; all impossible by construction.</p>
+                    </article>
+                    <article class="feature-card animate-on-scroll">
+                        <div class="feature-icon blue">&#129302;</div>
+                        <h3>AI-Native Design</h3>
+                        <p>Structured intent annotations let any AI understand what code should do. The compiler formally verifies it does. AI writes code, the type system proves it correct.</p>
+                    </article>
+                    <article class="feature-card animate-on-scroll">
+                        <div class="feature-icon purple">&#127760;</div>
+                        <h3>Universal Deployment</h3>
+                        <p>One codebase compiles to native binaries, WebAssembly, and blockchain bytecode. Frontend, backend, and smart contracts share the same types.</p>
+                    </article>
+                    <article class="feature-card animate-on-scroll">
+                        <div class="feature-icon cyan">&#9889;</div>
+                        <h3>Actor Model Concurrency</h3>
+                        <p>No shared mutable state, no locks, no races. Isolated actors communicate via typed messages with supervision trees for fault tolerance.</p>
+                    </article>
+                    <article class="feature-card animate-on-scroll">
+                        <div class="feature-icon orange">&#128220;</div>
+                        <h3>First-Class Smart Contracts</h3>
+                        <p>Reentrancy is impossible by construction thanks to linear state. Write decentralized applications with the same confidence as traditional software.</p>
+                    </article>
+                    <article class="feature-card animate-on-scroll">
+                        <div class="feature-icon pink">&#128736;</div>
+                        <h3>Self-Hosting Compiler</h3>
+                        <p>The C! compiler is written in C! itself, proving the language is powerful enough for systems-level work. Open source for humans and AI contributors alike.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code Examples Section -->
+        <section class="section section-dark" id="examples" aria-labelledby="examples-heading">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-label">See It in Action</span>
+                    <h2 id="examples-heading">Code that proves itself correct</h2>
+                    <p>Explore real C! examples showing how the type system and intent annotations work together.</p>
+                </div>
+
+                <div class="animate-on-scroll">
+                    <div class="code-tabs">
+                        <button class="code-tab active" data-tab="intent">Intent Annotations</button>
+                        <button class="code-tab" data-tab="types">Unified Types</button>
+                        <button class="code-tab" data-tab="actors">Actor Model</button>
+                        <button class="code-tab" data-tab="linear">Linear Types</button>
+                    </div>
+
+                    <!-- Intent Annotations -->
+                    <div class="code-panel active" data-panel="intent">
+                        <div class="code-showcase">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <div class="code-dots"><span></span><span></span><span></span></div>
+                                    <span class="code-filename">transfer.cb</span>
+                                </div>
+                                <div class="code-body">
+<pre><span class="ann">#[intent("Transfer tokens between accounts,</span>
+<span class="ann">         ensuring sender has sufficient balance,</span>
+<span class="ann">         atomic — both sides update or neither does")]</span>
+<span class="ann">#[invariant(total_supply_unchanged)]</span>
+<span class="ann">#[pre(balances[from] >= amount)]</span>
+<span class="ann">#[post(balances[to] == old(balances[to]) + amount)]</span>
+<span class="kw">fn</span> <span class="fn">transfer</span><span class="par">(</span>
+    <span class="var">from</span>: <span class="ty">Address</span>,
+    <span class="var">to</span>: <span class="ty">Address</span>,
+    <span class="var">amount</span>: <span class="ty">u256</span>
+<span class="par">)</span> <span class="par">{</span>
+    <span class="cm">// Compiler proves this matches</span>
+    <span class="cm">// the annotations above</span>
+<span class="par">}</span></pre>
+                                </div>
+                            </div>
+                            <div class="code-showcase-text">
+                                <span class="section-label">AI Meets Formal Verification</span>
+                                <h2>Intent annotations bridge AI and correctness</h2>
+                                <p>Write what your code <em>should</em> do in natural language. The compiler formally verifies it does. Any AI can instantly understand any C! codebase.</p>
+                                <ul>
+                                    <li><span class="check">&#10003;</span> Natural-language intent descriptions</li>
+                                    <li><span class="check">&#10003;</span> Pre- and post-conditions checked at compile time</li>
+                                    <li><span class="check">&#10003;</span> Invariants enforced across all code paths</li>
+                                    <li><span class="check">&#10003;</span> AI can generate code; compiler proves it correct</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Unified Types -->
+                    <div class="code-panel" data-panel="types">
+                        <div class="code-showcase">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <div class="code-dots"><span></span><span></span><span></span></div>
+                                    <span class="code-filename">shared/models.cb</span>
+                                </div>
+                                <div class="code-body">
+<pre><span class="cm">// Same type used in backend, frontend,</span>
+<span class="cm">// AND smart contract</span>
+<span class="kw">type</span> <span class="ty">User</span> <span class="par">{</span>
+    <span class="prop">id</span>: <span class="ty">UUID</span>,
+    <span class="prop">name</span>: <span class="ty">String</span><span class="par">{</span><span class="prop">len</span>: <span class="num">1</span><span class="op">..</span><span class="num">100</span><span class="par">}</span>,
+    <span class="prop">email</span>: <span class="ty">Email</span>,
+    <span class="prop">role</span>: <span class="ty">Admin</span> <span class="op">|</span> <span class="ty">Editor</span> <span class="op">|</span> <span class="ty">Viewer</span>,
+<span class="par">}</span></pre>
+                                </div>
+                            </div>
+                            <div class="code-showcase-text">
+                                <span class="section-label">Full-Stack Unified</span>
+                                <h2>One type definition, three deployment targets</h2>
+                                <p>Define your types once. Use them in your backend API, your frontend UI, and your smart contracts. No code generation, no schema drift, no bugs.</p>
+                                <ul>
+                                    <li><span class="check">&#10003;</span> Shared types across all deployment targets</li>
+                                    <li><span class="check">&#10003;</span> Refined types with built-in constraints</li>
+                                    <li><span class="check">&#10003;</span> Sum types for safe exhaustive matching</li>
+                                    <li><span class="check">&#10003;</span> Zero runtime overhead</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actor Model -->
+                    <div class="code-panel" data-panel="actors">
+                        <div class="code-showcase">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <div class="code-dots"><span></span><span></span><span></span></div>
+                                    <span class="code-filename">wallet_service.cb</span>
+                                </div>
+                                <div class="code-body">
+<pre><span class="kw">actor</span> <span class="ty">WalletService</span> <span class="par">{</span>
+    <span class="kw">state</span> <span class="var">balances</span>: <span class="ty">Map</span><span class="op">&lt;</span><span class="ty">Address</span>, <span class="ty">u256</span><span class="op">&gt;</span>
+
+    <span class="kw">on</span> <span class="ty">Transfer</span><span class="par">(</span><span class="var">from</span>, <span class="var">to</span>, <span class="var">amount</span><span class="par">)</span> <span class="par">{</span>
+        <span class="mac">verify!</span><span class="par">(</span><span class="var">balances</span><span class="par">[</span><span class="var">from</span><span class="par">]</span> <span class="op">&gt;=</span> <span class="var">amount</span><span class="par">)</span>;
+        <span class="var">balances</span><span class="par">[</span><span class="var">from</span><span class="par">]</span> <span class="op">-=</span> <span class="var">amount</span>;
+        <span class="var">balances</span><span class="par">[</span><span class="var">to</span><span class="par">]</span> <span class="op">+=</span> <span class="var">amount</span>;
+        <span class="kw">reply</span> <span class="ty">Receipt</span> <span class="par">{</span> <span class="prop">tx_id</span>: <span class="fn">generate_id</span><span class="par">()</span> <span class="par">}</span>
+    <span class="par">}</span>
+<span class="par">}</span></pre>
+                                </div>
+                            </div>
+                            <div class="code-showcase-text">
+                                <span class="section-label">Concurrency Without Fear</span>
+                                <h2>Actor model with isolated state</h2>
+                                <p>Each actor owns its state exclusively. No shared memory, no locks, no data races. Communication happens through typed messages with built-in supervision.</p>
+                                <ul>
+                                    <li><span class="check">&#10003;</span> Isolated mutable state per actor</li>
+                                    <li><span class="check">&#10003;</span> Typed message passing</li>
+                                    <li><span class="check">&#10003;</span> Supervision trees for fault tolerance</li>
+                                    <li><span class="check">&#10003;</span> Data races impossible by construction</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Linear Types -->
+                    <div class="code-panel" data-panel="linear">
+                        <div class="code-showcase">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <div class="code-dots"><span></span><span></span><span></span></div>
+                                    <span class="code-filename">wallet.cb</span>
+                                </div>
+                                <div class="code-body">
+<pre><span class="kw">fn</span> <span class="fn">transfer</span><span class="par">(</span>
+    <span class="var">token</span>: <span class="ty">own Token</span>,
+    <span class="var">to</span>: <span class="ty">Address</span>
+<span class="par">)</span> <span class="op">-></span> <span class="ty">Receipt</span> <span class="par">{</span>
+    <span class="var">ledger</span>.<span class="fn">move</span><span class="par">(</span><span class="var">token</span>, <span class="var">to</span><span class="par">)</span>
+<span class="par">}</span>
+
+<span class="kw">fn</span> <span class="fn">bad</span><span class="par">()</span> <span class="par">{</span>
+    <span class="kw">let</span> <span class="var">t</span> <span class="op">=</span> <span class="fn">mint_token</span><span class="par">()</span>;
+    <span class="fn">transfer</span><span class="par">(</span><span class="var">t</span>, <span class="var">alice</span><span class="par">)</span>;
+    <span class="fn">transfer</span><span class="par">(</span><span class="var">t</span>, <span class="var">bob</span><span class="par">)</span>;
+    <span class="err">// ^ COMPILE ERROR: t already consumed</span>
+<span class="par">}</span></pre>
+                                </div>
+                            </div>
+                            <div class="code-showcase-text">
+                                <span class="section-label">Linear Types</span>
+                                <h2>Resources that cannot be duplicated or forgotten</h2>
+                                <p>Linear types enforce that every resource is used exactly once. Tokens can't be double-spent. File handles can't leak. Memory can't be used after free.</p>
+                                <ul>
+                                    <li><span class="check">&#10003;</span> Double-spend impossible at compile time</li>
+                                    <li><span class="check">&#10003;</span> Use-after-free impossible at compile time</li>
+                                    <li><span class="check">&#10003;</span> Resource leaks caught by compiler</li>
+                                    <li><span class="check">&#10003;</span> Zero-cost abstraction &mdash; no runtime overhead</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Section -->
+        <section class="section" id="comparison" aria-labelledby="comparison-heading">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-label">The C! Difference</span>
+                    <h2 id="comparison-heading">From discipline to construction</h2>
+                    <p>Traditional languages ask developers to avoid mistakes. C! makes mistakes structurally impossible.</p>
+                </div>
+                <div class="comparison-grid animate-on-scroll">
+                    <div class="comparison-card">
+                        <h3><span class="old">&#10007;</span> Traditional approach</h3>
+                        <p>Write code, then audit for buffer overflows, race conditions, injection attacks. Hope reviewers catch everything. Ship and pray.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h3><span class="new">&#10003;</span> The C! approach</h3>
+                        <p>The type system makes these bugs structurally impossible. If it compiles, the vulnerability class is eliminated. No audit needed for what cannot exist.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h3><span class="old">&#10007;</span> AI + traditional languages</h3>
+                        <p>AI generates code, but humans must review every line for security. AI can't understand intent from code alone. Hallucinations become vulnerabilities.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h3><span class="new">&#10003;</span> AI + C!</h3>
+                        <p>AI reads structured intent annotations. Generates implementation. Compiler formally verifies correctness. If it compiles, the AI got it right. Trust the math.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section" aria-labelledby="cta-heading">
+            <div class="container">
+                <h2 id="cta-heading">Ready to build the future?</h2>
+                <p>C! is open source and welcoming contributors &mdash; both human and AI. Join us in building the language that makes secure software the default.</p>
+                <div class="cta-actions">
+                    <a href="getting-started.html" class="btn btn-primary btn-lg">Get Started</a>
+                    <a href="https://github.com/integsec/c-bang" class="btn btn-github btn-lg" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Star on GitHub
+                    </a>
+                    <a href="community.html" class="btn btn-secondary btn-lg">Join the Community</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="index.html" class="nav-logo">
+                        <span class="logo-c">C</span><span class="logo-bang">!</span>
+                    </a>
+                    <p>The first programming language designed for AI-human collaboration with security by construction.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Learn</h4>
+                    <ul>
+                        <li><a href="docs.html">Documentation</a></li>
+                        <li><a href="getting-started.html">Getting Started</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="community.html">Contribute</a></li>
+                        <li><a href="https://github.com/integsec/c-bang" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Project</h4>
+                    <ul>
+                        <li><a href="https://github.com/integsec/c-bang/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
+                        <li><a href="https://github.com/integsec/c-bang/blob/main/CODE_OF_CONDUCT.md" target="_blank" rel="noopener noreferrer">Code of Conduct</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2025 IntegSec. C! is open-source software.</span>
+                <a href="https://github.com/integsec/c-bang" target="_blank" rel="noopener noreferrer">github.com/integsec/c-bang</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

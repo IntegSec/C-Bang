@@ -1,0 +1,83 @@
+// actors.cb — Actor model concurrency in C!
+//
+// Demonstrates supervision trees, message passing,
+// and structured concurrency within actors.
+
+// A chat room service built with actors
+actor ChatRoom {
+    state members: Map<UserId, UserActor>
+    state history: Vec<Message>{len: ..1000}  // bounded history
+
+    on Join(user_id: UserId, name: String) {
+        let user_actor = spawn UserActor(user_id, name, self);
+        members.insert(user_id, user_actor);
+        broadcast(SystemMessage("{name} joined the room"));
+    }
+
+    on Leave(user_id: UserId) {
+        if let Some(actor) = members.remove(user_id) {
+            actor.stop();
+            broadcast(SystemMessage("{user_id} left the room"));
+        }
+    }
+
+    on SendMessage(from: UserId, text: String{len: 1..2000}) {
+        let msg = Message {
+            from: from,
+            text: text,
+            timestamp: now(),
+        };
+        history.push(msg);
+        broadcast(msg);
+    }
+
+    fn broadcast(msg: Message) {
+        for (_, member) in members {
+            member.send(Deliver(msg.clone()));
+        }
+    }
+
+    // Supervision: if a UserActor crashes, remove them cleanly
+    supervise UserActor {
+        restart: .never,
+        on_failure: |failed_actor| {
+            self.send(Leave(failed_actor.user_id));
+        }
+    }
+}
+
+actor UserActor {
+    state user_id: UserId
+    state name: String
+    state room: ChatRoom
+
+    on Deliver(msg: Message) {
+        // Send to client WebSocket connection
+        websocket.send(msg.to_json());
+    }
+
+    on Disconnect() {
+        room.send(Leave(user_id));
+    }
+}
+
+// Application supervisor — the top-level actor
+actor Application {
+    supervise ChatRoom { restart: .always, max_restarts: 10 per .minute }
+
+    supervise MetricsCollector { restart: .never }
+
+    on Start() {
+        print("Chat server starting...");
+        let room = spawn ChatRoom();
+
+        // Start the HTTP server that connects WebSockets to actors
+        spawn WebSocketServer(port: 8080, room: room);
+    }
+}
+
+fn main() {
+    let app = spawn Application();
+    app.send(Start());
+    app.await_shutdown();
+}

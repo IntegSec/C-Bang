@@ -1,0 +1,343 @@
+# C! (C-Bang) — Full Reference for AI Assistants
+
+> The first programming language designed for AI-human collaboration with security by construction.
+
+## Overview
+
+C! (pronounced "C-Bang") is an open-source programming language created by IntegSec. It is designed from the ground up for a world where AI and humans write code together. The language combines several powerful ideas that have never existed together in a single language:
+
+1. **Linear/affine type system** that eliminates entire vulnerability classes at compile time
+2. **Structured intent annotations** that allow AI to understand code and the compiler to verify correctness
+3. **Actor model concurrency** with no shared mutable state
+4. **Universal deployment** to native binaries, WebAssembly, and blockchain bytecode
+5. **Self-hosting compiler** written in C! itself
+
+The C! compiler (`cb`) is open source. Human and AI contributors are equally welcome.
+
+---
+
+## Security by Construction
+
+The core innovation of C! is that security guarantees are structural — enforced by the type system, not by developer discipline, linting, or auditing. The following vulnerability classes are eliminated at compile time:
+
+- **Buffer overflows**: Bounds-checked arrays with compile-time-verified indices
+- **Use-after-free**: Linear types ensure consumed values cannot be reused
+- **Double-spend**: Linear tokens can be used exactly once
+- **Reentrancy attacks**: Linear state in smart contracts prevents reentrant calls
+- **SQL injection**: Query types are distinct from string types; no implicit conversion
+- **Cross-site scripting (XSS)**: HTML output types require sanitized inputs
+- **Data races**: Actor model with isolated state; no shared mutable memory
+- **Integer overflow**: Checked arithmetic by default; explicit wrapping when intended
+- **Null pointer dereference**: No null value; Option<T> with exhaustive matching
+- **Resource leaks**: Linear types must be consumed; forgetting a resource is a compile error
+
+---
+
+## Type System
+
+### Linear Types
+
+A linear type must be used **exactly once**. This is the foundational mechanism for security.
+
+```
+fn transfer(token: own Token, to: Address) -> Receipt {
+    ledger.move(token, to)  // token consumed here
+}
+
+fn bad() {
+    let t = mint_token();
+    transfer(t, alice);  // t consumed
+    transfer(t, bob);    // COMPILE ERROR: t already consumed
+}
+```
+
+The `own` qualifier marks a parameter as linear. The compiler tracks ownership through all code paths, including branches, loops, and early returns.
+
+### Affine Types
+
+An affine type can be used **at most once**. Unlike linear types, it is safe to drop without using.
+
+```
+fn start_task() -> borrow CancelToken {
+    let cancel = spawn_background_work();
+    return cancel  // caller may or may not use it
+}
+```
+
+The `borrow` qualifier marks a parameter as affine.
+
+### Ownership Qualifiers
+
+| Qualifier | Meaning                        | Use count       |
+|-----------|--------------------------------|-----------------|
+| `own`     | Linear — must be used exactly once | Exactly once    |
+| `borrow`  | Affine — use at most once      | At most once    |
+| `&`       | Shared immutable reference     | Unlimited reads |
+| `&mut`    | Exclusive mutable reference    | One writer      |
+
+### Refined Types
+
+Types can carry constraints:
+
+```
+type User {
+    name: String{len: 1..100},
+    age: u8{range: 0..150},
+    email: Email,
+    role: Admin | Editor | Viewer,
+}
+```
+
+Constraints are checked at compile time where possible, and at runtime boundaries (e.g., parsing user input) where necessary.
+
+### Sum Types (Tagged Unions)
+
+```
+type Result<T, E> = Ok(T) | Err(E)
+type Option<T> = Some(T) | None
+
+fn process(r: Result<User, DbError>) {
+    match r {
+        Ok(user) => greet(user),
+        Err(err) => log_error(err),
+    }  // exhaustive — missing a case is a compile error
+}
+```
+
+### Generic Types
+
+```
+fn first<T>(items: Vec<T>) -> Option<T> {
+    match items.len() {
+        0 => None,
+        _ => Some(items[0]),
+    }
+}
+```
+
+---
+
+## Intent Annotations
+
+Intent annotations bridge AI understanding and formal verification. They are structured metadata on functions.
+
+```
+#[intent("Transfer tokens between accounts,
+         ensuring sender has sufficient balance,
+         atomic — both sides update or neither does")]
+#[invariant(total_supply_unchanged)]
+#[pre(balances[from] >= amount)]
+#[post(balances[to] == old(balances[to]) + amount)]
+fn transfer(from: Address, to: Address, amount: u256) {
+    // Compiler proves this implementation matches the annotations
+}
+```
+
+### Annotation Types
+
+- `#[intent("...")]` — Natural-language description of what the function does. AI agents read this to understand purpose.
+- `#[pre(condition)]` — Precondition. Must hold before the function executes. Verified by the compiler.
+- `#[post(condition)]` — Postcondition. Must hold after the function returns. Verified by the compiler.
+- `#[invariant(condition)]` — Invariant. Must hold throughout execution and across calls. Verified by the compiler.
+
+### AI Workflow
+
+1. Human writes intent annotations (what the function should do)
+2. AI agent reads the annotations and generates the function body
+3. Compiler formally verifies the implementation satisfies all conditions
+4. If it compiles, the implementation is provably correct
+
+---
+
+## Actor Model Concurrency
+
+C! uses actors for concurrency. Each actor owns its state exclusively. Communication is through typed messages.
+
+```
+actor WalletService {
+    state balances: Map<Address, u256>
+
+    on Transfer(from, to, amount) {
+        verify!(balances[from] >= amount);
+        balances[from] -= amount;
+        balances[to] += amount;
+        reply Receipt { tx_id: generate_id() }
+    }
+}
+```
+
+### Key Properties
+
+- **Isolated state**: Each actor's state is private and exclusively owned
+- **Typed messages**: Messages are typed; the compiler verifies senders and receivers agree
+- **No shared memory**: Data races are impossible by construction
+- **Supervision trees**: Actors can supervise child actors for fault tolerance
+
+```
+supervisor AppSupervisor {
+    strategy: OneForOne,
+    children: [WalletService, Logger, Cache]
+}
+```
+
+---
+
+## Universal Deployment
+
+A single C! codebase compiles to multiple targets:
+
+### Native Binaries
+High-performance executables for servers, CLI tools, and systems software.
+
+```
+cb build                    # default: native
+cb build --target native    # explicit
+```
+
+### WebAssembly (WASM)
+Run in browsers and edge environments with near-native speed.
+
+```
+cb build --target wasm
+```
+
+### Blockchain Bytecode
+Deploy smart contracts to EVM-compatible chains.
+
+```
+cb build --target evm
+```
+
+### Shared Types
+
+Types defined once are used identically across all targets:
+
+```
+// This type works in backend, frontend WASM, AND smart contracts
+type User {
+    id: UUID,
+    name: String{len: 1..100},
+    email: Email,
+    role: Admin | Editor | Viewer,
+}
+```
+
+---
+
+## Smart Contracts
+
+C! treats smart contracts as first-class citizens. The actor model maps naturally to on-chain contracts.
+
+```
+#[contract(evm)]
+actor Vault {
+    state balances: Map<Address, u256>
+
+    #[payable]
+    on Deposit() {
+        balances[msg.sender] += msg.value;
+    }
+
+    on Withdraw(amount: u256) {
+        verify!(balances[msg.sender] >= amount);
+        balances[msg.sender] -= amount;
+        send(msg.sender, amount);
+    }
+}
+```
+
+### Reentrancy Protection
+
+Reentrancy is impossible by construction because state is linear. Once an actor's state is accessed in a message handler, the state is "in use" and cannot be accessed by a reentrant call. The checks-effects-interactions pattern is enforced by the type system.
+
+---
+
+## Standard Library
+
+| Module             | Description                                      |
+|--------------------|--------------------------------------------------|
+| `std::collections` | Vec, Map, Set with ownership-aware APIs          |
+| `std::io`          | File, network, stream I/O with linear handles    |
+| `std::crypto`      | Hashing, signing, verification primitives        |
+| `std::net`         | HTTP client/server, WebSocket, gRPC              |
+| `std::json`        | Type-safe JSON serialization/deserialization      |
+| `std::test`        | Testing framework with property-based testing    |
+| `std::async`       | Async runtime built on the actor model           |
+
+---
+
+## CLI Tool Reference
+
+The `cb` command-line tool:
+
+| Command          | Description                          |
+|------------------|--------------------------------------|
+| `cb init <name>` | Create a new C! project              |
+| `cb build`       | Compile the project                  |
+| `cb run`         | Build and run                        |
+| `cb test`        | Run tests                            |
+| `cb fmt`         | Format source code                   |
+| `cb check`       | Type-check without building          |
+| `cb doc`         | Generate documentation               |
+| `cb build --target wasm` | Compile to WebAssembly        |
+| `cb build --target evm`  | Compile to EVM bytecode       |
+
+---
+
+## Project Structure
+
+```
+my-project/
+  cb.toml           # Project configuration
+  src/
+    main.cb         # Entry point
+    lib.cb          # Library root (for libraries)
+  tests/
+    main_test.cb    # Tests
+```
+
+### cb.toml
+
+```toml
+[project]
+name = "my-project"
+version = "0.1.0"
+edition = "2025"
+
+[dependencies]
+std = "0.1"
+
+[targets]
+native = true
+wasm = false
+evm = false
+```
+
+---
+
+## File Extension
+
+C! source files use the `.cb` extension.
+
+---
+
+## Links
+
+- Website: https://c-bang.integsec.com/
+- Documentation: https://c-bang.integsec.com/docs.html
+- Getting Started: https://c-bang.integsec.com/getting-started.html
+- GitHub Repository: https://github.com/integsec/c-bang
+- Community: https://c-bang.integsec.com/community.html
+- Issues: https://github.com/integsec/c-bang/issues
+- Discussions: https://github.com/integsec/c-bang/discussions
+
+---
+
+## License
+
+C! is open-source software. See the LICENSE file in the repository for details.
+
+## Contributing
+
+Both human and AI contributors are welcome. See the community page for details:
+https://c-bang.integsec.com/community.html

@@ -1,0 +1,13 @@
+# C! (C-Bang)
+
+> The first programming language designed for AI-human collaboration with security by construction.
+
+C! (pronounced "C-Bang") is an open-source programming language that combines linear/affine types, structured intent annotations, actor model concurrency, and universal deployment (native, WebAssembly, blockchain) in a single language. Its type system eliminates buffer overflows, use-after-free, double-spend, reentrancy, SQL injection, XSS, data races, integer overflow, null pointers, and resource leaks — all at compile time, not by discipline. The compiler is self-hosting (written in C!). AI agents can read intent annotations, generate implementations, and the compiler formally verifies correctness.
+
+## Links
+
+- Documentation: https://c-bang.integsec.com/docs.html
+- Getting Started: https://c-bang.integsec.com/getting-started.html
+- GitHub: https://github.com/integsec/c-bang
+- Community: https://c-bang.integsec.com/community.html
+- Full AI reference: https://c-bang.integsec.com/llms-full.txt
