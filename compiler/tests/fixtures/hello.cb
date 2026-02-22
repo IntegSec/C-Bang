@@ -1,0 +1,6 @@
+// hello.cb — The classic "Hello, World!" in C!
+
+#[intent("Print a greeting to standard output")]
+fn main() {
+    print("Hello from C!");
+}

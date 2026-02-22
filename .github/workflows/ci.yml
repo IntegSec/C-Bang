@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build & Test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: compiler/package-lock.json
+
+      - name: Install dependencies
+        working-directory: compiler
+        run: npm ci
+
+      - name: Type check
+        working-directory: compiler
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        working-directory: compiler
+        run: npx vitest run
+
+      - name: Build
+        working-directory: compiler
+        run: npm run build
+
+      - name: Test lexer against examples
+        working-directory: compiler
+        run: |
+          for file in ../examples/*.cb ../examples/demos/*/main.cb; do
+            echo "Lexing $file..."
+            node dist/cli.js lex "$file"
+          done

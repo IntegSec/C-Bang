@@ -1,0 +1,40 @@
+{
+  "name": "cbang",
+  "version": "0.1.0",
+  "description": "The C! (C-Bang) programming language compiler",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "cbang": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup src/cli.ts src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/cli.ts src/index.ts --format esm --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src/",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [
+    "programming-language",
+    "compiler",
+    "security",
+    "ai",
+    "wasm",
+    "blockchain",
+    "smart-contracts"
+  ],
+  "author": "IntegSec and C! Contributors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/integsec/C-Bang"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
