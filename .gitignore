@@ -27,6 +27,20 @@ target/
 
 # Screenshots / temp images
 x-*.png
+current-state.png
+linkedin-*.png
+reddit-*.png
+
+# Website temp files
+website/profile-400x400.png
+website/profile-render.html
+
+# Credential files (safety net)
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
 
 # Environment
 .env
