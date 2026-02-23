@@ -17,6 +17,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Lexer, TokenType, Parser, formatDiagnostic, VERSION } from './index.js';
+import { Checker } from './checker/index.js';
 
 function main(): void {
   const args = process.argv.slice(2);
@@ -136,7 +137,18 @@ function checkCommand(filePath: string): void {
   }
 
   console.log(`✓ Parsing passed (${program.items.length} top-level items)`);
-  console.log('⚠ Type checker not yet implemented');
+
+  const checker = new Checker();
+  const typeDiags = checker.check(program);
+
+  if (typeDiags.length > 0) {
+    for (const d of typeDiags) {
+      console.error(formatDiagnostic(d, source));
+    }
+    process.exit(1);
+  }
+
+  console.log(`✓ Type checking passed`);
 }
 
 function readSource(filePath: string): string {

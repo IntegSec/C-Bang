@@ -1,0 +1,17 @@
+#[intent("Demonstrate C! type checking")]
+type Point {
+    x: i64,
+    y: i64,
+}
+
+fn distance_squared(a: Point, b: Point) -> i64 {
+    let dx = a.x - b.x;
+    let dy = a.y - b.y;
+    return dx * dx + dy * dy;
+}
+
+fn main() {
+    let origin = Point { x: 0, y: 0 };
+    let target = Point { x: 3, y: 4 };
+    let dist = distance_squared(origin, target);
+}

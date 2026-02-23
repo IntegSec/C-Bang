@@ -306,4 +306,67 @@ describe('Checker', () => {
       expect(check('fn main() { let mut x: i64 = 0; x = 42; }')).toEqual([]);
     });
   });
+
+  describe('unary operators', () => {
+    it('negation preserves numeric type', () => {
+      expect(check('fn main() { let x: i64 = -42; }')).toEqual([]);
+    });
+
+    it('not operator requires bool', () => {
+      const d = check('fn main() { let x = !42; }');
+      expect(d.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('assignment type errors', () => {
+    it('detects incompatible assignment', () => {
+      const d = check('fn main() { let mut x: i64 = 0; x = true; }');
+      expect(d.length).toBeGreaterThan(0);
+    });
+
+    it('checks compound assignment requires numeric', () => {
+      const d = check('fn main() { let mut x: bool = true; x += true; }');
+      expect(d.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('function call argument types', () => {
+    it('detects wrong argument type', () => {
+      const d = check('fn foo(x: bool) {} fn main() { foo(42); }');
+      expect(d).toHaveLength(1);
+      expect(d[0]!.message).toContain('bool');
+    });
+  });
+
+  describe('integration', () => {
+    it('full pipeline: valid program with structs and functions', () => {
+      const source = `
+        type User {
+          name: String,
+          age: i64,
+        }
+
+        fn greet(user: User) -> String {
+          return user.name;
+        }
+
+        fn main() {
+          let u = User { name: "Alice", age: 30 };
+          let name = greet(u);
+        }
+      `;
+      expect(check(source)).toEqual([]);
+    });
+
+    it('full pipeline: detects multiple errors', () => {
+      const source = `
+        fn foo(x: i64) -> bool {
+          let y = undefined_var;
+          return 42;
+        }
+      `;
+      const d = check(source);
+      expect(d.length).toBeGreaterThanOrEqual(2);
+    });
+  });
 });

@@ -11,4 +11,7 @@ export { Parser } from './parser/index.js';
 export type * from './ast/index.js';
 export { formatDiagnostic, createError, createWarning } from './errors/index.js';
 
+export { Checker } from './checker/index.js';
+export type { Type } from './checker/types.js';
+
 export const VERSION = '0.1.0';
