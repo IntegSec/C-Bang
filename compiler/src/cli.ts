@@ -8,7 +8,8 @@
  *   cbang lex <file.cb>      Show tokens (debug)
  *   cbang parse <file.cb>    Show AST (debug)
  *   cbang run <file.cb>      Build and run
- *   cbang build <file.cb>    Compile to target
+ *   cbang build <file.cb>    Compile to JS (default)
+ *   cbang build --target wasm <file.cb>  Compile to WASM
  *   cbang verify <file.cb>   Run formal verification
  *   cbang --version           Show version
  *   cbang --help              Show help
@@ -73,14 +74,21 @@ function main(): void {
       runCommand(file).catch(handleError);
       break;
 
-    case 'build':
+    case 'build': {
       if (!file) {
         console.error('Error: missing file argument');
-        console.error('Usage: cbang build <file.cb>');
+        console.error('Usage: cbang build [--target js|wasm] <file.cb>');
         process.exit(1);
       }
-      buildCommand(file).catch(handleError);
+      const target = args.includes('--target')
+        ? args[args.indexOf('--target') + 1] ?? 'js'
+        : 'js';
+      const buildFile = target !== 'js' && args.includes('--target')
+        ? args.filter(a => a !== '--target' && a !== target).slice(1)[0] ?? file
+        : file;
+      buildCommand(buildFile, target).catch(handleError);
       break;
+    }
 
     case 'repl':
       replCommand();
@@ -296,6 +304,42 @@ async function compile(filePath: string): Promise<string> {
   return generator.generate(program);
 }
 
+async function compileWasm(filePath: string): Promise<Uint8Array> {
+  const source = readSource(filePath);
+  const lexer = new Lexer(source, filePath);
+  const tokens = lexer.tokenize();
+
+  const lexErrors = tokens.filter(t => t.type === TokenType.Error);
+  if (lexErrors.length > 0) {
+    for (const err of lexErrors) {
+      const diag = createError('L001', `Unexpected character '${err.value}'`, err.span);
+      console.error(formatDiagnostic(diag, source));
+    }
+    process.exit(1);
+  }
+
+  const parser = new Parser(tokens);
+  const { program, diagnostics } = parser.parse();
+
+  if (diagnostics.length > 0) {
+    for (const d of diagnostics) {
+      console.error(formatDiagnostic(d, source));
+    }
+    process.exit(1);
+  }
+
+  let genModule: any;
+  try {
+    genModule = await import('./codegen/index.js');
+  } catch {
+    console.error('Error: WASM code generation is not yet available.');
+    process.exit(1);
+  }
+
+  const generator = new genModule.WasmGenerator();
+  return generator.generate(program);
+}
+
 async function runCommand(filePath: string): Promise<void> {
   const jsCode = await compile(filePath);
   // Execute the generated JavaScript using Node.js
@@ -310,11 +354,18 @@ async function runCommand(filePath: string): Promise<void> {
   }
 }
 
-async function buildCommand(filePath: string): Promise<void> {
-  const jsCode = await compile(filePath);
-  const outFile = basename(filePath, '.cb') + '.js';
-  writeFileSync(outFile, jsCode, 'utf-8');
-  console.log(`✓ Compiled to ${outFile}`);
+async function buildCommand(filePath: string, target: string = 'js'): Promise<void> {
+  if (target === 'wasm') {
+    const wasmBytes = await compileWasm(filePath);
+    const outFile = basename(filePath, '.cb') + '.wasm';
+    writeFileSync(outFile, wasmBytes);
+    console.log(`✓ Compiled to ${outFile} (${wasmBytes.length} bytes)`);
+  } else {
+    const jsCode = await compile(filePath);
+    const outFile = basename(filePath, '.cb') + '.js';
+    writeFileSync(outFile, jsCode, 'utf-8');
+    console.log(`✓ Compiled to ${outFile}`);
+  }
 }
 
 function readSource(filePath: string): string {
@@ -339,7 +390,8 @@ COMMANDS:
   lex <file.cb>       Show tokens (debug)
   parse <file.cb>     Show AST (debug)
   run <file.cb>       Compile and execute
-  build <file.cb>     Compile to JavaScript
+  build <file.cb>     Compile to target (default: JavaScript)
+  build --target wasm <file.cb>  Compile to WebAssembly
   repl                Interactive REPL
   verify <file.cb>    Formal verification [not yet implemented]
   audit <file.cb>     Security audit     [not yet implemented]
