@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playground — C! (C-Bang)</title>
+    <meta name="description" content="Try C! in your browser. Write, compile, and run C! code with instant feedback — no installation required.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/favicon-192x192.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- CodeMirror 6 -->
+    <script type="module">
+        import {EditorView, basicSetup} from 'https://esm.sh/@codemirror/basic-setup@0.20.0';
+        import {EditorState} from 'https://esm.sh/@codemirror/state@6.5.2';
+        import {keymap} from 'https://esm.sh/@codemirror/view@6.36.8';
+        import {StreamLanguage} from 'https://esm.sh/@codemirror/language@6.10.8';
+        import {oneDark} from 'https://esm.sh/@codemirror/theme-one-dark@6.1.2';
+
+        // C! syntax highlighting via StreamLanguage
+        const cbangMode = {
+            startState() {
+                return { inBlockComment: 0, inAnnotation: false };
+            },
+            token(stream, state) {
+                // Block comment
+                if (state.inBlockComment > 0) {
+                    while (!stream.eol()) {
+                        if (stream.match('*/')) {
+                            state.inBlockComment--;
+                            if (state.inBlockComment === 0) return 'comment';
+                        } else if (stream.match('/*')) {
+                            state.inBlockComment++;
+                        } else {
+                            stream.next();
+                        }
+                    }
+                    return 'comment';
+                }
+
+                // Line comment
+                if (stream.match('//')) {
+                    stream.skipToEnd();
+                    return 'comment';
+                }
+
+                // Block comment start
+                if (stream.match('/*')) {
+                    state.inBlockComment = 1;
+                    while (!stream.eol()) {
+                        if (stream.match('*/')) {
+                            state.inBlockComment--;
+                            if (state.inBlockComment === 0) return 'comment';
+                        } else if (stream.match('/*')) {
+                            state.inBlockComment++;
+                        } else {
+                            stream.next();
+                        }
+                    }
+                    return 'comment';
+                }
+
+                // Annotations: #[...]
+                if (stream.match('#[')) {
+                    let depth = 1;
+                    while (!stream.eol() && depth > 0) {
+                        const ch = stream.next();
+                        if (ch === '[') depth++;
+                        else if (ch === ']') depth--;
+                    }
+                    return 'meta';
+                }
+
+                // Strings
+                if (stream.match('"')) {
+                    while (!stream.eol()) {
+                        const ch = stream.next();
+                        if (ch === '\\') stream.next();
+                        else if (ch === '"') break;
+                    }
+                    return 'string';
+                }
+
+                // Numbers
+                if (stream.match(/^0[xX][0-9a-fA-F_]+/) ||
+                    stream.match(/^0[bB][01_]+/) ||
+                    stream.match(/^\d[\d_]*\.[\d_]*([eE][+-]?\d+)?/) ||
+                    stream.match(/^\d[\d_]*([eE][+-]?\d+)/) ||
+                    stream.match(/^\d[\d_]*/)) {
+                    return 'number';
+                }
+
+                // Operators
+                if (stream.match(/^(->|=>|::|\.\.\.|\.\.=|\.\.|&&|\|\||[+\-*\/%=<>!&|^~]+)/)) {
+                    return 'operator';
+                }
+
+                // Identifiers and keywords
+                if (stream.match(/^[a-zA-Z_]\w*/)) {
+                    const word = stream.current();
+                    const keywords = new Set([
+                        'fn', 'let', 'type', 'actor', 'contract', 'server', 'component',
+                        'state', 'on', 'match', 'if', 'else', 'for', 'in', 'return',
+                        'reply', 'spawn', 'deploy', 'emit', 'pub', 'use', 'mod',
+                        'own', 'shared', 'scope', 'parallel', 'supervise', 'init',
+                        'with', 'pure', 'async', 'await', 'mut', 'while', 'enum',
+                    ]);
+                    const builtinTypes = new Set([
+                        'i8', 'i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64',
+                        'f32', 'f64', 'u256', 'bool', 'String', 'Vec', 'Map',
+                        'Option', 'Result', 'Ok', 'Err', 'Some', 'None',
+                        'Address', 'Bool',
+                    ]);
+                    if (word === 'true' || word === 'false') return 'bool';
+                    if (keywords.has(word)) return 'keyword';
+                    if (builtinTypes.has(word)) return 'typeName';
+                    // PascalCase -> type name
+                    if (word[0] >= 'A' && word[0] <= 'Z' && /[a-z]/.test(word)) return 'typeName';
+                    // Check if followed by ! (macro)
+                    if (stream.eat('!')) return 'macroName';
+                    return 'variableName';
+                }
+
+                // Punctuation
+                if (stream.match(/^[(){}[\],;:.#]/)) {
+                    return 'punctuation';
+                }
+
+                stream.next();
+                return null;
+            },
+        };
+
+        const cbangLanguage = StreamLanguage.define(cbangMode);
+
+        // Custom theme matching the website's dark design
+        const playgroundTheme = EditorView.theme({
+            '&': {
+                backgroundColor: '#0d0d16',
+                color: '#e8e8f0',
+                fontSize: '14px',
+                height: '100%',
+            },
+            '.cm-content': {
+                fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+                caretColor: '#4d7cff',
+                padding: '12px 0',
+            },
+            '.cm-cursor': {
+                borderLeftColor: '#4d7cff',
+            },
+            '.cm-activeLine': {
+                backgroundColor: 'rgba(77, 124, 255, 0.05)',
+            },
+            '.cm-selectionBackground, ::selection': {
+                backgroundColor: 'rgba(77, 124, 255, 0.25) !important',
+            },
+            '.cm-gutters': {
+                backgroundColor: '#0a0a0f',
+                color: '#6a6a80',
+                borderRight: '1px solid #2a2a3e',
+                fontFamily: "'JetBrains Mono', monospace",
+            },
+            '.cm-activeLineGutter': {
+                backgroundColor: 'rgba(77, 124, 255, 0.08)',
+                color: '#9898b0',
+            },
+            '.cm-lineNumbers .cm-gutterElement': {
+                padding: '0 8px 0 16px',
+            },
+            '.cm-scroller': {
+                overflow: 'auto',
+            },
+        }, { dark: true });
+
+        // Syntax highlighting theme
+        import {HighlightStyle, syntaxHighlighting} from 'https://esm.sh/@codemirror/language@6.10.8';
+        import {tags} from 'https://esm.sh/@lezer/highlight@1.2.1';
+
+        const cbangHighlightStyle = HighlightStyle.define([
+            { tag: tags.keyword, color: '#c792ea' },
+            { tag: tags.comment, color: '#546e7a', fontStyle: 'italic' },
+            { tag: tags.string, color: '#c3e88d' },
+            { tag: tags.number, color: '#f78c6c' },
+            { tag: tags.bool, color: '#f78c6c' },
+            { tag: tags.operator, color: '#89ddff' },
+            { tag: tags.typeName, color: '#ffcb6b' },
+            { tag: tags.macroName, color: '#ff5572' },
+            { tag: tags.variableName, color: '#d9d9e0' },
+            { tag: tags.meta, color: '#89ddff' },
+            { tag: tags.punctuation, color: '#d9d9e0' },
+        ]);
+
+        // Create the editor
+        const initialCode = window.PLAYGROUND_EXAMPLES ? window.PLAYGROUND_EXAMPLES[0].code : '// Loading...';
+
+        const state = EditorState.create({
+            doc: initialCode,
+            extensions: [
+                basicSetup,
+                cbangLanguage,
+                playgroundTheme,
+                syntaxHighlighting(cbangHighlightStyle),
+                EditorView.lineWrapping,
+                keymap.of([{
+                    key: 'Ctrl-Enter',
+                    mac: 'Cmd-Enter',
+                    run: () => { document.getElementById('run-btn').click(); return true; },
+                }]),
+            ],
+        });
+
+        const editor = new EditorView({
+            state,
+            parent: document.getElementById('editor-container'),
+        });
+
+        // Expose editor to global scope for the playground script
+        window.playgroundEditor = editor;
+        window.EditorState = EditorState;
+        window.editorExtensions = [
+            basicSetup,
+            cbangLanguage,
+            playgroundTheme,
+            syntaxHighlighting(cbangHighlightStyle),
+            EditorView.lineWrapping,
+            keymap.of([{
+                key: 'Ctrl-Enter',
+                mac: 'Cmd-Enter',
+                run: () => { document.getElementById('run-btn').click(); return true; },
+            }]),
+        ];
+
+        // Signal that editor is ready
+        window.dispatchEvent(new Event('editor-ready'));
+    </script>
+
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Playground-specific styles */
+        .playground-layout {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - var(--nav-height));
+            margin-top: var(--nav-height);
+        }
+
+        .playground-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .playground-toolbar select {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            cursor: pointer;
+            min-width: 180px;
+        }
+
+        .playground-toolbar select:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .playground-toolbar select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(77, 124, 255, 0.2);
+        }
+
+        .toolbar-spacer {
+            flex: 1;
+        }
+
+        .btn-run {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            background: var(--gradient-green);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        .btn-run:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 211, 160, 0.3);
+        }
+
+        .btn-run:active {
+            transform: translateY(0);
+        }
+
+        .btn-run .play-icon {
+            font-size: 0.8rem;
+        }
+
+        .btn-share {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .btn-share:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+        }
+
+        .btn-share.copied {
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .playground-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .panel-editor {
+            border-right: 1px solid var(--border-color);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .panel-header h3 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .panel-body {
+            flex: 1;
+            overflow: auto;
+            min-height: 0;
+        }
+
+        #editor-container {
+            height: 100%;
+        }
+
+        #editor-container .cm-editor {
+            height: 100%;
+        }
+
+        .output-tabs {
+            display: flex;
+            gap: 0;
+        }
+
+        .output-tab {
+            padding: 6px 14px;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+        }
+
+        .output-tab:hover {
+            color: var(--text-secondary);
+        }
+
+        .output-tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .output-content {
+            display: none;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .output-content.active {
+            display: block;
+        }
+
+        #output-result {
+            color: var(--text-primary);
+        }
+
+        #output-js {
+            color: var(--text-secondary);
+        }
+
+        #output-errors {
+            color: var(--accent-red);
+        }
+
+        .output-line {
+            padding: 1px 0;
+        }
+
+        .output-line.log { color: var(--text-primary); }
+        .output-line.warn { color: var(--accent-orange); }
+        .output-line.error { color: var(--accent-red); }
+        .output-line.info { color: var(--accent-cyan); }
+
+        .output-placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .keyboard-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .keyboard-hint kbd {
+            display: inline-block;
+            padding: 2px 6px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* Error badge on tab */
+        .error-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: var(--accent-red);
+            color: #fff;
+            border-radius: 9px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        .error-count:empty {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .playground-panels {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+
+            .panel-editor {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .playground-toolbar {
+                padding: 8px 12px;
+                gap: 8px;
+            }
+
+            .playground-toolbar select {
+                min-width: 140px;
+                font-size: 0.8rem;
+            }
+
+            .keyboard-hint {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .playground-toolbar {
+                padding: 8px;
+            }
+
+            .btn-run {
+                padding: 8px 14px;
+                font-size: 0.85rem;
+            }
+
+            .btn-share span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <a href="index.html" class="nav-logo" aria-label="C! Homepage">
+                <span class="logo-c">C</span><span class="logo-bang">!</span>
+            </a>
+            <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+            <ul class="nav-links">
+                <li><a href="docs.html">Docs</a></li>
+                <li><a href="getting-started.html">Get Started</a></li>
+                <li><a href="playground.html" class="active">Playground</a></li>
+                <li><a href="community.html">Community</a></li>
+                <li>
+                    <a href="https://github.com/integsec/C-Bang" class="nav-github" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Star on GitHub
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="playground-layout">
+        <!-- Toolbar -->
+        <div class="playground-toolbar">
+            <select id="example-select" aria-label="Load example">
+                <option value="">-- Load Example --</option>
+            </select>
+            <button class="btn-run" id="run-btn" title="Run (Ctrl+Enter)">
+                <span class="play-icon">&#9654;</span> Run
+            </button>
+            <div class="toolbar-spacer"></div>
+            <div class="keyboard-hint">
+                <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run
+            </div>
+            <button class="btn-share" id="share-btn" title="Copy shareable URL">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span>Share</span>
+            </button>
+        </div>
+
+        <!-- Panels -->
+        <div class="playground-panels">
+            <!-- Editor -->
+            <div class="panel panel-editor">
+                <div class="panel-header">
+                    <h3>Editor</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="editor-container"></div>
+                </div>
+            </div>
+
+            <!-- Output -->
+            <div class="panel panel-output">
+                <div class="panel-header">
+                    <div class="output-tabs">
+                        <button class="output-tab active" data-output="result">Output</button>
+                        <button class="output-tab" data-output="js">JavaScript</button>
+                        <button class="output-tab" data-output="errors">Errors <span class="error-count" id="error-count"></span></button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="output-content active" id="output-result">
+                        <span class="output-placeholder">Click "Run" or press Ctrl+Enter to compile and execute.</span>
+                    </div>
+                    <div class="output-content" id="output-js">
+                        <span class="output-placeholder">Generated JavaScript will appear here after running.</span>
+                    </div>
+                    <div class="output-content" id="output-errors">
+                        <span class="output-placeholder">No errors.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Examples data (before compiler and playground script) -->
+    <script>
+        window.PLAYGROUND_EXAMPLES = [
+            {
+                name: "Hello World",
+                code: `// Hello World in C!
+// The classic first program.
+
+#[intent("Print a greeting to standard output")]
+fn main() {
+    println!("Hello from C!");
+    println!("Welcome to the C! playground!");
+    println!("Try editing this code and clicking Run.");
+}`
+            },
+            {
+                name: "Fibonacci",
+                code: `// Fibonacci sequence in C!
+// Demonstrates functions, recursion, and loops.
+
+fn fibonacci(n: i32) -> i32 {
+    if n <= 1 {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+#[intent("Calculate and display Fibonacci numbers")]
+fn main() {
+    println!("Fibonacci sequence:");
+    let mut i = 0;
+    while i < 10 {
+        let result = fibonacci(i);
+        println!("  fib({i}) = {result}");
+        i = i + 1;
+    }
+}`
+            },
+            {
+                name: "Structs & Methods",
+                code: `// Structs and string interpolation in C!
+// Define data types with named fields.
+
+type Point {
+    x: f64,
+    y: f64,
+}
+
+type Rectangle {
+    origin: Point,
+    width: f64,
+    height: f64,
+}
+
+fn distance(a: &Point, b: &Point) -> f64 {
+    let dx = b.x - a.x;
+    let dy = b.y - a.y;
+    return dx * dx + dy * dy;
+}
+
+#[intent("Demonstrate struct types and field access")]
+fn main() {
+    let p1 = Point { x: 0.0, y: 0.0 };
+    let p2 = Point { x: 3.0, y: 4.0 };
+    println!("Point 1: ({p1.x}, {p1.y})");
+    println!("Point 2: ({p2.x}, {p2.y})");
+    println!("Distance squared: {distance(&p1, &p2)}");
+
+    let rect = Rectangle {
+        origin: Point { x: 1.0, y: 2.0 },
+        width: 10.0,
+        height: 5.0,
+    };
+    let area = rect.width * rect.height;
+    println!("Rectangle area: {area}");
+}`
+            },
+            {
+                name: "Ownership & Linear Types",
+                code: `// Ownership in C!
+// Linear types ensure resources are used exactly once.
+// The compiler prevents use-after-move bugs.
+
+type Token {
+    id: u64,
+    value: u256,
+    owner: String,
+}
+
+#[intent("Show ownership transfer semantics")]
+fn main() {
+    let token = Token { id: 1, value: 1000, owner: "Alice" };
+    println!("Created token {token.id}");
+    println!("Owner: {token.owner}");
+    println!("Value: {token.value}");
+
+    // In C!, ownership moves when you pass a value.
+    // After transfer, the original binding is consumed.
+    // The compiler prevents double-spend by construction:
+    //
+    //   transfer(token, "Bob");   // token consumed
+    //   transfer(token, "Carol"); // COMPILE ERROR!
+    //
+    // Linear types make entire vulnerability classes
+    // structurally impossible.
+
+    println!("");
+    println!("Linear types guarantee:");
+    println!("  - No double-spend");
+    println!("  - No use-after-free");
+    println!("  - No resource leaks");
+}`
+            },
+            {
+                name: "Closures",
+                code: `// Closures and higher-order functions in C!
+// Lambda expressions with captured variables.
+
+#[intent("Show closures and function composition")]
+fn main() {
+    // Lambda / closure syntax
+    let square = |x| x * x;
+    println!("5 squared = {square(5)}");
+    println!("9 squared = {square(9)}");
+
+    // Closures can capture outer variables
+    let factor = 3;
+    let multiply = |x| x * factor;
+    println!("7 * 3 = {multiply(7)}");
+
+    // Closures as inline transformations
+    let numbers = [1, 2, 3, 4, 5];
+    println!("");
+    println!("Closures enable functional patterns:");
+    println!("  square(4) = {square(4)}");
+    println!("  multiply(10) = {multiply(10)}");
+
+    // Nested closures
+    let add = |a| |b| a + b;
+    let add_five = add(5);
+    println!("  add_five(3) = {add_five(3)}");
+    println!("  add_five(10) = {add_five(10)}");
+}`
+            },
+            {
+                name: "Enums & Match",
+                code: `// Enums and pattern matching in C!
+// Algebraic data types with exhaustive matching.
+
+enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
+enum Shape {
+    Circle(f64),
+    Rectangle(f64, f64),
+    Point,
+}
+
+fn describe_direction(d: Direction) {
+    match d {
+        North => println!("Going north!"),
+        South => println!("Going south!"),
+        East  => println!("Going east!"),
+        West  => println!("Going west!"),
+    }
+}
+
+#[intent("Demonstrate enum types and pattern matching")]
+fn main() {
+    describe_direction(Direction.North);
+    describe_direction(Direction.East);
+
+    // Enum variants with data
+    let s = Shape.Circle(5.0);
+    let r = Shape.Rectangle(3.0, 4.0);
+    let p = Shape.Point;
+
+    println!("Created 3 shapes");
+
+    // Match with data extraction
+    match s {
+        Circle(radius) => println!("Circle radius: {radius}"),
+        Rectangle(w, h) => println!("Rectangle: {w}x{h}"),
+        Point => println!("Just a point"),
+    }
+}`
+            },
+            {
+                name: "Control Flow",
+                code: `// Control flow in C!
+// If/else, while loops, for loops.
+
+fn fizzbuzz(n: i32) {
+    let mut i = 1;
+    while i <= n {
+        if i % 15 == 0 {
+            println!("FizzBuzz");
+        } else if i % 3 == 0 {
+            println!("Fizz");
+        } else if i % 5 == 0 {
+            println!("Buzz");
+        } else {
+            println!("{i}");
+        }
+        i = i + 1;
+    }
+}
+
+fn factorial(n: i32) -> i32 {
+    if n <= 1 {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+#[intent("Demonstrate control flow: loops, conditionals, recursion")]
+fn main() {
+    println!("=== FizzBuzz (1-20) ===");
+    fizzbuzz(20);
+
+    println!("");
+    println!("=== Factorials ===");
+    let mut i = 1;
+    while i <= 8 {
+        let f = factorial(i);
+        println!("{i}! = {f}");
+        i = i + 1;
+    }
+}`
+            },
+        ];
+    </script>
+
+    <!-- C! Compiler (browser bundle) -->
+    <script src="cbang-compiler.js"></script>
+
+    <!-- Playground logic -->
+    <script>
+    (function() {
+        'use strict';
+
+        // Wait for editor to be ready
+        let editorReady = false;
+        let compilerReady = typeof CbangCompiler !== 'undefined';
+
+        function init() {
+            if (!window.playgroundEditor) return;
+            editorReady = true;
+            setupExamples();
+            setupRunButton();
+            setupOutputTabs();
+            setupShareButton();
+            setupMobileNav();
+            loadFromHash();
+        }
+
+        window.addEventListener('editor-ready', init);
+        // Also try immediately in case editor loaded first
+        if (window.playgroundEditor) init();
+
+        function getEditorCode() {
+            return window.playgroundEditor.state.doc.toString();
+        }
+
+        function setEditorCode(code) {
+            const editor = window.playgroundEditor;
+            editor.dispatch({
+                changes: {
+                    from: 0,
+                    to: editor.state.doc.length,
+                    insert: code,
+                },
+            });
+        }
+
+        // --- Examples ---
+        function setupExamples() {
+            const select = document.getElementById('example-select');
+            const examples = window.PLAYGROUND_EXAMPLES || [];
+            examples.forEach((ex, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = ex.name;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', () => {
+                const idx = parseInt(select.value, 10);
+                if (!isNaN(idx) && examples[idx]) {
+                    setEditorCode(examples[idx].code);
+                    clearOutput();
+                }
+                select.value = '';
+            });
+        }
+
+        // --- Run ---
+        function setupRunButton() {
+            document.getElementById('run-btn').addEventListener('click', runCode);
+        }
+
+        function runCode() {
+            const source = getEditorCode();
+            const resultEl = document.getElementById('output-result');
+            const jsEl = document.getElementById('output-js');
+            const errorsEl = document.getElementById('output-errors');
+            const errorCount = document.getElementById('error-count');
+
+            resultEl.innerHTML = '';
+            jsEl.innerHTML = '';
+            errorsEl.innerHTML = '';
+            errorCount.textContent = '';
+
+            if (!compilerReady) {
+                errorsEl.innerHTML = '<div class="output-line error">Compiler not loaded. Please refresh the page.</div>';
+                errorCount.textContent = '1';
+                showOutputTab('errors');
+                return;
+            }
+
+            try {
+                // Lex
+                const lexer = new CbangCompiler.Lexer(source);
+                const tokens = lexer.tokenize();
+
+                // Parse
+                const parser = new CbangCompiler.Parser(tokens);
+                const parseResult = parser.parse();
+
+                // Show diagnostics
+                const diagnostics = parseResult.diagnostics || [];
+                if (diagnostics.length > 0) {
+                    const errorLines = diagnostics.map(d => {
+                        const loc = d.span ? ` at line ${d.span.start.line}:${d.span.start.column}` : '';
+                        const severity = d.severity || 'error';
+                        return `<div class="output-line ${severity}">[${severity}]${loc} ${escapeHtml(d.message)}</div>`;
+                    }).join('');
+                    errorsEl.innerHTML = errorLines;
+                    const errorOnlyCount = diagnostics.filter(d => (d.severity || 'error') === 'error').length;
+                    if (errorOnlyCount > 0) {
+                        errorCount.textContent = errorOnlyCount;
+                    }
+                }
+
+                if (!parseResult.program || !parseResult.program.items) {
+                    if (diagnostics.length === 0) {
+                        errorsEl.innerHTML = '<div class="output-line error">Parse failed: no program produced.</div>';
+                        errorCount.textContent = '1';
+                    }
+                    showOutputTab('errors');
+                    return;
+                }
+
+                // Generate JS
+                const gen = new CbangCompiler.JsGenerator();
+                let js = gen.generate(parseResult.program);
+
+                // Show generated JS
+                jsEl.textContent = js;
+
+                // Auto-call main() if it exists
+                if (parseResult.program.items.some(item => item.kind === 'FunctionDecl' && item.name === 'main')) {
+                    js += '\nmain();';
+                }
+
+                // Execute with console capture
+                const output = [];
+                const mockConsole = {
+                    log: (...args) => output.push({ type: 'log', text: args.map(String).join(' ') }),
+                    warn: (...args) => output.push({ type: 'warn', text: args.map(String).join(' ') }),
+                    error: (...args) => output.push({ type: 'error', text: args.map(String).join(' ') }),
+                    info: (...args) => output.push({ type: 'info', text: args.map(String).join(' ') }),
+                };
+
+                const fn = new Function('console', js);
+                fn(mockConsole);
+
+                // Render output
+                if (output.length > 0) {
+                    resultEl.innerHTML = output.map(o =>
+                        `<div class="output-line ${o.type}">${escapeHtml(o.text)}</div>`
+                    ).join('');
+                } else {
+                    resultEl.innerHTML = '<span class="output-placeholder">Program ran successfully (no output).</span>';
+                }
+
+                showOutputTab('result');
+
+            } catch (err) {
+                const msg = err.message || String(err);
+                errorsEl.innerHTML = `<div class="output-line error">${escapeHtml(msg)}</div>`;
+                errorCount.textContent = (parseInt(errorCount.textContent) || 0) + 1;
+                if (resultEl.innerHTML === '') {
+                    showOutputTab('errors');
+                }
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('output-result').innerHTML =
+                '<span class="output-placeholder">Click "Run" or press Ctrl+Enter to compile and execute.</span>';
+            document.getElementById('output-js').innerHTML =
+                '<span class="output-placeholder">Generated JavaScript will appear here after running.</span>';
+            document.getElementById('output-errors').innerHTML =
+                '<span class="output-placeholder">No errors.</span>';
+            document.getElementById('error-count').textContent = '';
+        }
+
+        // --- Output Tabs ---
+        function setupOutputTabs() {
+            document.querySelectorAll('.output-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    showOutputTab(tab.dataset.output);
+                });
+            });
+        }
+
+        function showOutputTab(name) {
+            document.querySelectorAll('.output-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.output === name);
+            });
+            document.querySelectorAll('.output-content').forEach(c => {
+                c.classList.toggle('active', c.id === 'output-' + name);
+            });
+        }
+
+        // --- Share ---
+        function setupShareButton() {
+            document.getElementById('share-btn').addEventListener('click', () => {
+                const code = getEditorCode();
+                const encoded = btoa(unescape(encodeURIComponent(code)));
+                const url = window.location.origin + window.location.pathname + '#code=' + encoded;
+                history.replaceState(null, '', '#code=' + encoded);
+
+                navigator.clipboard.writeText(url).then(() => {
+                    const btn = document.getElementById('share-btn');
+                    btn.classList.add('copied');
+                    const origHTML = btn.innerHTML;
+                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> <span>Copied!</span>';
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.innerHTML = origHTML;
+                    }, 2000);
+                }).catch(() => {
+                    // Fallback: select a prompt
+                    prompt('Copy this URL to share:', url);
+                });
+            });
+        }
+
+        function loadFromHash() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#code=')) {
+                try {
+                    const encoded = hash.slice(6);
+                    const code = decodeURIComponent(escape(atob(encoded)));
+                    setEditorCode(code);
+                } catch (e) {
+                    // Invalid hash, ignore
+                }
+            }
+        }
+
+        // --- Mobile Nav ---
+        function setupMobileNav() {
+            const toggle = document.querySelector('.nav-toggle');
+            const links = document.querySelector('.nav-links');
+            if (toggle && links) {
+                toggle.addEventListener('click', () => {
+                    links.classList.toggle('open');
+                    toggle.setAttribute('aria-expanded', links.classList.contains('open'));
+                });
+            }
+        }
+
+        // --- Helpers ---
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    })();
+    </script>
+</body>
+</html>

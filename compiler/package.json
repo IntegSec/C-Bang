@@ -13,7 +13,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint src/",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "build:browser": "tsup src/index.ts --format iife --global-name CbangCompiler --out-dir ../website --no-dts && mv ../website/index.global.js ../website/cbang-compiler.js"
   },
   "keywords": [
     "programming-language",
