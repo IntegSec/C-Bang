@@ -21,7 +21,7 @@ import { execSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { Lexer, TokenType, Parser, formatDiagnostic, createError, VERSION } from './index.js';
 import { Resolver } from './semantic/index.js';
-import { Checker, OwnershipChecker, RefinementChecker } from './checker/index.js';
+import { Checker, OwnershipChecker, RefinementChecker, IntentChecker } from './checker/index.js';
 
 function main(): void {
   const args = process.argv.slice(2);
@@ -223,6 +223,24 @@ function checkCommand(filePath: string): void {
   }
 
   console.log(`✓ Refinement checking passed`);
+
+  const intentChecker = new IntentChecker();
+  const intentDiags = intentChecker.check(program);
+
+  const intentErrors = intentDiags.filter(d => d.severity === 'error');
+  if (intentErrors.length > 0) {
+    for (const d of intentErrors) {
+      console.error(formatDiagnostic(d, source));
+    }
+    process.exit(1);
+  }
+
+  // Show warnings but don't fail
+  for (const d of intentDiags.filter(d => d.severity === 'warning')) {
+    console.error(formatDiagnostic(d, source));
+  }
+
+  console.log(`✓ Intent verification passed`);
 }
 
 async function compile(filePath: string): Promise<string> {
@@ -285,6 +303,17 @@ async function compile(filePath: string): Promise<string> {
   const refineErrors = refineDiags.filter(d => d.severity === 'error');
   if (refineErrors.length > 0) {
     for (const d of refineErrors) {
+      console.error(formatDiagnostic(d, source));
+    }
+    process.exit(1);
+  }
+
+  const intentChecker = new IntentChecker();
+  const intentDiags = intentChecker.check(program);
+
+  const intentErrors = intentDiags.filter(d => d.severity === 'error');
+  if (intentErrors.length > 0) {
+    for (const d of intentErrors) {
       console.error(formatDiagnostic(d, source));
     }
     process.exit(1);
