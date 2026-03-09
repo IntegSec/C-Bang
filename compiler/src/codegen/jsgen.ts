@@ -4,7 +4,7 @@
  * Walks the AST produced by the parser and emits equivalent JavaScript
  * source code as a string.  Ownership modifiers and effect annotations
  * are silently dropped because they have no JavaScript counterpart.
- * Actor, contract, and server declarations emit placeholder comments.
+ * Contract and component declarations emit placeholder comments.
  */
 
 import type {
@@ -237,54 +237,7 @@ export class JsGenerator {
   }
 
   private emitContractDecl(decl: ContractDecl): void {
-    this.emitAnnotationsAsComments(decl.annotations);
-    const exportPrefix = decl.visibility === 'public' ? 'export ' : '';
-
-    const stateMembers = decl.members.filter(m => m.kind === 'StateDecl') as StateDecl[];
-    const functions = decl.members.filter(m => m.kind === 'FunctionDecl') as FunctionDecl[];
-    const initDecl = decl.members.find(m => m.kind === 'InitDecl') as import('../ast/index.js').InitDecl | undefined;
-
-    this.writeLine(`${exportPrefix}class ${decl.name} {`);
-    this.indentInc();
-
-    // Interfaces metadata
-    if (decl.interfaces.length > 0) {
-      this.writeLine(`static __interfaces = [${decl.interfaces.map(i => `"${i}"`).join(', ')}];`);
-      this.writeLine('');
-    }
-
-    // Constructor — initialize state and run init block
-    const initParams = initDecl ? initDecl.params.map(p => p.name).join(', ') : '';
-    this.writeLine(`constructor(${initParams}) {`);
-    this.indentInc();
-    for (const s of stateMembers) {
-      if (s.initializer) {
-        this.writeLine(`this.${s.name} = ${this.exprToString(s.initializer)};`);
-      } else {
-        this.writeLine(`this.${s.name} = undefined;`);
-      }
-    }
-    if (initDecl) {
-      for (const stmt of initDecl.body.statements) {
-        this.emitStmt(stmt);
-      }
-    }
-    this.indentDec();
-    this.writeLine('}');
-
-    // Functions → methods
-    for (const fn of functions) {
-      this.writeLine('');
-      this.emitAnnotationsAsComments(fn.annotations);
-      const asyncPrefix = fn.isAsync ? 'async ' : '';
-      const params = fn.params.map(p => p.name).join(', ');
-      this.writeLine(`${asyncPrefix}${fn.name}(${params}) {`);
-      this.emitBlockBody(fn.body);
-      this.writeLine('}');
-    }
-
-    this.indentDec();
-    this.writeLine('}');
+    this.writeLine(`/* contract ${decl.name} not yet supported */`);
   }
 
   private emitServerDecl(decl: ServerDecl): void {
@@ -292,29 +245,29 @@ export class JsGenerator {
     const exportPrefix = decl.visibility === 'public' ? 'export ' : '';
 
     const stateMembers = decl.members.filter(m => m.kind === 'StateDecl') as StateDecl[];
+    const fieldAssigns = decl.members.filter(m => m.kind === 'FieldAssignment') as import('../ast/index.js').FieldAssignment[];
     const functions = decl.members.filter(m => m.kind === 'FunctionDecl') as FunctionDecl[];
-    const fieldAssignments = decl.members.filter(m => m.kind === 'FieldAssignment') as import('../ast/index.js').FieldAssignment[];
 
     this.writeLine(`${exportPrefix}class ${decl.name} {`);
     this.indentInc();
 
-    // Constructor — initialize config fields and state
-    this.writeLine(`constructor() {`);
-    this.indentInc();
-    for (const f of fieldAssignments) {
-      this.writeLine(`this.${f.name} = ${this.exprToString(f.value)};`);
-    }
-    for (const s of stateMembers) {
-      if (s.initializer) {
-        this.writeLine(`this.${s.name} = ${this.exprToString(s.initializer)};`);
-      } else {
-        this.writeLine(`this.${s.name} = undefined;`);
+    if (stateMembers.length > 0 || fieldAssigns.length > 0) {
+      this.writeLine('constructor() {');
+      this.indentInc();
+      for (const s of stateMembers) {
+        if (s.initializer) {
+          this.writeLine(`this.${s.name} = ${this.exprToString(s.initializer)};`);
+        } else {
+          this.writeLine(`this.${s.name} = undefined;`);
+        }
       }
+      for (const f of fieldAssigns) {
+        this.writeLine(`this.${f.name} = ${this.exprToString(f.value)};`);
+      }
+      this.indentDec();
+      this.writeLine('}');
     }
-    this.indentDec();
-    this.writeLine('}');
 
-    // Route handlers → methods
     for (const fn of functions) {
       this.writeLine('');
       this.emitAnnotationsAsComments(fn.annotations);
@@ -330,44 +283,25 @@ export class JsGenerator {
   }
 
   private emitComponentDecl(decl: ComponentDecl): void {
-    this.emitAnnotationsAsComments(decl.annotations);
-    const exportPrefix = decl.visibility === 'public' ? 'export ' : '';
-    const params = decl.params.map(p => p.name).join(', ');
-
-    // Components compile to render functions
-    this.writeLine(`${exportPrefix}function ${decl.name}(${params}) {`);
-    this.emitBlockBody(decl.body);
-    this.writeLine('}');
+    this.writeLine(`/* component ${decl.name} not yet supported */`);
   }
 
   private emitUseDecl(decl: UseDecl): void {
-    const modulePath = `./${decl.path.join('/')}.js`;
+    const path = decl.path.join('/');
     if (decl.isWildcard) {
-      this.writeLine(`import * from "${modulePath}";`);
+      this.writeLine(`/* use ${path}::* */`);
       return;
     }
-    const namedItems = decl.items
-      .filter((item): item is Extract<typeof item, { kind: 'Named' }> => item.kind === 'Named');
-    if (namedItems.length === 0) return;
-    const specifiers = namedItems
-      .map(item => item.alias ? `${item.name} as ${item.alias}` : item.name)
-      .join(', ');
-    this.writeLine(`import { ${specifiers} } from "${modulePath}";`);
+    for (const item of decl.items) {
+      if (item.kind === 'Named') {
+        const alias = item.alias ? ` as ${item.alias}` : '';
+        this.writeLine(`/* use ${path}::${item.name}${alias} */`);
+      }
+    }
   }
 
   private emitModDecl(decl: ModDecl): void {
-    if (decl.body && decl.body.length > 0) {
-      this.writeLine(`const ${decl.name} = (() => {`);
-      this.indentInc();
-      for (const item of decl.body) {
-        this.emitTopLevel(item);
-      }
-      this.indentDec();
-      this.writeLine('})();');
-    } else {
-      // External module reference — will be loaded at runtime
-      this.writeLine(`/* mod ${decl.name} (external) */`);
-    }
+    this.writeLine(`/* mod ${decl.name} */`);
   }
 
   private emitStateDecl(decl: StateDecl): void {
@@ -411,17 +345,17 @@ export class JsGenerator {
         break;
       case 'EmitStmt': {
         const args = stmt.args.map(a => this.exprToString(a)).join(', ');
-        this.writeLine(`this.emit("${stmt.eventName}", ${args});`);
+        this.writeLine(`/* emit ${stmt.eventName}(${args}) */`);
         break;
       }
       case 'SpawnStmt': {
         const args = stmt.args.map(a => this.exprToString(a)).join(', ');
-        this.writeLine(`const __actor = new ${stmt.actor}(${args});`);
+        this.writeLine(`/* spawn ${stmt.actor}(${args}) */`);
         break;
       }
       case 'DeployStmt': {
         const args = stmt.args.map(a => this.exprToString(a.value)).join(', ');
-        this.writeLine(`const __contract = new ${stmt.contract}(${args});`);
+        this.writeLine(`/* deploy ${stmt.contract}(${args}) */`);
         break;
       }
     }
