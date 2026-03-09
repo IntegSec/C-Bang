@@ -544,6 +544,49 @@ function early_exit() {
     });
   });
 
+  // ─── 15a. Component declarations ───────────────────────────────────
+
+  describe('component declarations', () => {
+    it('generates component as a function', () => {
+      const js = generate(`
+        component Greeting(name: String) {
+          let msg = name;
+        }
+      `);
+      expect(js).toContain('function Greeting(name) {');
+      expect(js).toContain('const msg = name;');
+    });
+
+    it('generates component with no params', () => {
+      const js = generate(`
+        component Header() {
+          let title = "Hello";
+        }
+      `);
+      expect(js).toContain('function Header() {');
+    });
+
+    it('generates public component with export', () => {
+      const js = generate(`
+        pub component Button(label: String) {
+          let x = label;
+        }
+      `);
+      expect(js).toContain('export function Button(label) {');
+    });
+
+    it('generates component with annotations', () => {
+      const js = generate(`
+        #[intent(render user profile)]
+        component Profile(user: User) {
+          let name = user;
+        }
+      `);
+      expect(js).toContain('/* @intent(render user profile) */');
+      expect(js).toContain('function Profile(user) {');
+    });
+  });
+
   // ─── 15b. Contract/Server stubs ────────────────────────────────────
 
   describe('stub declarations', () => {

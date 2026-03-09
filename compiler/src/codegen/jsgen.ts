@@ -283,7 +283,12 @@ export class JsGenerator {
   }
 
   private emitComponentDecl(decl: ComponentDecl): void {
-    this.writeLine(`/* component ${decl.name} not yet supported */`);
+    this.emitAnnotationsAsComments(decl.annotations);
+    const exportPrefix = decl.visibility === 'public' ? 'export ' : '';
+    const params = decl.params.map(p => p.name).join(', ');
+    this.writeLine(`${exportPrefix}function ${decl.name}(${params}) {`);
+    this.emitBlockBody(decl.body);
+    this.writeLine('}');
   }
 
   private emitUseDecl(decl: UseDecl): void {
