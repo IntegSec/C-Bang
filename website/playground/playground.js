@@ -88,13 +88,6 @@ function compile(source) {
   }
 }
 
-function executeCompiledJs(jsCode) {
-  // This function runs user-authored C! code that was compiled to JS.
-  // It is intentional — this is a playground for the user's own code.
-  var fn = new Function(jsCode);  // eslint-disable-line no-new-func
-  fn();
-}
-
 function run() {
   var source = getEditorValue();
   var result = compile(source);
@@ -111,43 +104,67 @@ function run() {
 
   jsOutput.textContent = result.js;
   consoleOutput.className = 'pg-output';
+  consoleOutput.textContent = 'Running...';
 
-  // Execute with captured console.log
-  var logs = [];
-  var origLog = console.log;
-  var origWarn = console.warn;
-  var origError = console.error;
-  console.log = function () {
-    var args = Array.prototype.slice.call(arguments);
-    logs.push(args.join(' '));
-  };
-  console.warn = function () {
-    var args = Array.prototype.slice.call(arguments);
-    logs.push('[warn] ' + args.join(' '));
-  };
-  console.error = function () {
-    var args = Array.prototype.slice.call(arguments);
-    logs.push('[error] ' + args.join(' '));
-  };
-
-  try {
-    var execCode = result.js;
-    // Auto-call main() if defined
-    if (execCode.indexOf('function main(') !== -1) {
-      execCode += '\nmain();';
-    }
-    executeCompiledJs(execCode);
-    consoleOutput.textContent = logs.join('\n') || '(no output)';
-    consoleOutput.className = 'pg-output success';
-  } catch (e) {
-    var logText = logs.length > 0 ? logs.join('\n') + '\n' : '';
-    consoleOutput.textContent = logText + 'Runtime error: ' + e.message;
-    consoleOutput.className = 'pg-output error';
-  } finally {
-    console.log = origLog;
-    console.warn = origWarn;
-    console.error = origError;
+  var execCode = result.js;
+  // Auto-call main() if defined
+  if (execCode.indexOf('function main(') !== -1) {
+    execCode += '\nmain();';
   }
+
+  // Execute in a sandboxed iframe via Blob URL to avoid needing unsafe-eval.
+  // The iframe posts console output back to us via postMessage.
+  var iframeHtml = '<!DOCTYPE html><html><head><script>' +
+    'var __logs = [];' +
+    'console.log = function() { __logs.push(Array.prototype.slice.call(arguments).join(" ")); };' +
+    'console.warn = function() { __logs.push("[warn] " + Array.prototype.slice.call(arguments).join(" ")); };' +
+    'console.error = function() { __logs.push("[error] " + Array.prototype.slice.call(arguments).join(" ")); };' +
+    'try {' + execCode.replace(/<\/script>/gi, '<\\/script>') + ';' +
+    '  parent.postMessage({ type: "cbang-output", logs: __logs }, "*");' +
+    '} catch(e) {' +
+    '  parent.postMessage({ type: "cbang-output", logs: __logs, error: e.message }, "*");' +
+    '}' +
+    '<\/script></head><body></body></html>';
+
+  var blob = new Blob([iframeHtml], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+
+  // Remove any previous sandbox iframe
+  var oldFrame = document.getElementById('cbang-sandbox');
+  if (oldFrame) oldFrame.remove();
+
+  var iframe = document.createElement('iframe');
+  iframe.id = 'cbang-sandbox';
+  iframe.style.display = 'none';
+  iframe.sandbox = 'allow-scripts';
+  iframe.src = url;
+  document.body.appendChild(iframe);
+
+  // Listen for result
+  var timeout = setTimeout(function () {
+    consoleOutput.textContent = '(timeout — program took too long)';
+    consoleOutput.className = 'pg-output error';
+    iframe.remove();
+    URL.revokeObjectURL(url);
+  }, 5000);
+
+  function onMessage(e) {
+    if (e.data && e.data.type === 'cbang-output') {
+      clearTimeout(timeout);
+      window.removeEventListener('message', onMessage);
+      var logText = e.data.logs.join('\n');
+      if (e.data.error) {
+        consoleOutput.textContent = (logText ? logText + '\n' : '') + 'Runtime error: ' + e.data.error;
+        consoleOutput.className = 'pg-output error';
+      } else {
+        consoleOutput.textContent = logText || '(no output)';
+        consoleOutput.className = 'pg-output success';
+      }
+      iframe.remove();
+      URL.revokeObjectURL(url);
+    }
+  }
+  window.addEventListener('message', onMessage);
 }
 
 function loadExample(name) {
