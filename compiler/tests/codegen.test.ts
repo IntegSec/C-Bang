@@ -896,7 +896,76 @@ function early_exit() {
     });
   });
 
-  // ─── 25. Indentation correctness ─────────────────────────────────
+  // ─── 25. Block expressions ──────────────────────────────────────
+
+  describe('block expressions', () => {
+    it('generates IIFE from block expression', () => {
+      const js = generate(`
+        fn main() {
+          let x = { let y = 1; return y; };
+        }
+      `);
+      expect(js).toContain('(() => {');
+      expect(js).toContain('const y = 1;');
+      expect(js).toContain('return y;');
+      expect(js).toContain('})()');
+    });
+  });
+
+  // ─── 26. Use declarations ─────────────────────────────────────────
+
+  describe('use declarations', () => {
+    it('generates use as comment', () => {
+      const js = generate(`
+        use std::io::{println}
+        fn main() {}
+      `);
+      expect(js).toContain('/* use std/io::println */');
+    });
+
+    it('generates use with single item (no braces)', () => {
+      const js = generate(`
+        use std::io::println
+        fn main() {}
+      `);
+      expect(js).toContain('/* use std/io::println */');
+    });
+  });
+
+  // ─── 27. Emit statements ──────────────────────────────────────────
+
+  describe('emit statements', () => {
+    it('generates emit as comment', () => {
+      const js = generate(`
+        actor Counter {
+          state count: i32 = 0
+          on Increment() {
+            count += 1;
+            emit CountChanged(count);
+          }
+        }
+      `);
+      expect(js).toContain('/* emit CountChanged(count) */');
+    });
+  });
+
+  // ─── 28. Reply statements ─────────────────────────────────────────
+
+  describe('reply statements', () => {
+    it('generates reply as return', () => {
+      const js = generate(`
+        actor Calc {
+          state result: i32 = 0
+          on Add(n: i32) {
+            reply n;
+          }
+        }
+      `);
+      expect(js).toContain('return n;');
+    });
+  });
+
+  // ─── 29. Indentation correctness ─────────────────────────────────
 
   describe('indentation', () => {
     it('indents nested blocks correctly', () => {
