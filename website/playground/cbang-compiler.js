@@ -4000,6 +4000,8 @@ var CBang = (() => {
       }
       this.indentDec();
       this.writeLine("});");
+      const variantNames = decl.variants.map((v) => v.name).join(", ");
+      this.writeLine(`const { ${variantNames} } = ${decl.name};`);
     }
     emitEnumVariant(variant, comma) {
       switch (variant.kind) {

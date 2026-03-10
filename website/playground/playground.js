@@ -95,6 +95,17 @@ pure fn describe(s: Shape) -> String {
         Circle(r) => { return "circle"; },
         Rect(w, h) => { return "rectangle"; },
     }
+}
+
+fn main() with IO {
+    let c = Circle(5.0);
+    let r = Rect(4.0, 6.0);
+
+    println!("Shape 1: {describe(c)} with area {area(c)}");
+    println!("Shape 2: {describe(r)} with area {area(r)}");
+
+    let big = Circle(10.0);
+    println!("Big circle area: {area(big)}");
 }`,
 
   chat: `// Chat Application — actors for real-time messaging
@@ -239,6 +250,111 @@ fn main() with IO {
 
     let fee = market.calculate_fee(500);
     println!("Fee on 500 token sale: {fee}");
+}`,
+
+  spirograph: `// Spirograph — Rainbow Generative Art
+// Demonstrates: pure functions, math builtins, canvas animation, string interpolation
+
+state t: f64 = 0.0
+state hue: f64 = 0.0
+
+#[intent("compute x position of spirograph curve")]
+pure fn spiro_x(t: f64, r1: f64, r2: f64, p: f64) -> f64 {
+    return (r1 - r2) * math_cos!(t) + p * math_cos!((r1 - r2) * t / r2);
+}
+
+#[intent("compute y position of spirograph curve")]
+pure fn spiro_y(t: f64, r1: f64, r2: f64, p: f64) -> f64 {
+    return (r1 - r2) * math_sin!(t) - p * math_sin!((r1 - r2) * t / r2);
+}
+
+#[intent("render one frame of the spirograph animation")]
+fn frame() {
+    let mut i = 0;
+    while i < 12 {
+        let x1 = 200.0 + spiro_x(t, 125.0, 47.0, 42.0);
+        let y1 = 200.0 + spiro_y(t, 125.0, 47.0, 42.0);
+        let x2 = 200.0 + spiro_x(t * 1.1, 100.0, 63.0, 55.0) * 0.8;
+        let y2 = 200.0 + spiro_y(t * 1.1, 100.0, 63.0, 55.0) * 0.8;
+
+        let r = math_floor!(127.0 + 127.0 * math_sin!(hue));
+        let g = math_floor!(127.0 + 127.0 * math_sin!(hue + 2.094));
+        let b = math_floor!(127.0 + 127.0 * math_sin!(hue + 4.189));
+        canvas_fill_style!("rgb({r},{g},{b})");
+        canvas_circle!(x1, y1, 1.8);
+
+        let r2c = math_floor!(127.0 + 127.0 * math_sin!(hue + 3.14));
+        let g2c = math_floor!(127.0 + 127.0 * math_sin!(hue + 5.234));
+        let b2c = math_floor!(127.0 + 127.0 * math_sin!(hue + 1.047));
+        canvas_fill_style!("rgb({r2c},{g2c},{b2c})");
+        canvas_circle!(x2, y2, 1.4);
+
+        t = t + 0.019;
+        hue = hue + 0.004;
+        i = i + 1;
+    }
+}
+
+fn main() with IO {
+    canvas_size!(400, 400);
+    canvas_fill_style!("#0a0a1a");
+    canvas_fill_rect!(0.0, 0.0, 400.0, 400.0);
+    canvas_font!("14px monospace");
+    canvas_fill_style!("rgba(255,255,255,0.6)");
+    canvas_text!("C! Spirograph", 152.0, 20.0);
+    canvas_font!("11px monospace");
+    canvas_fill_style!("rgba(85,85,119,0.6)");
+    canvas_text!("pure fn + math builtins + canvas_animate!", 68.0, 390.0);
+    println!("Rainbow spirograph — pure functions + canvas animation!");
+    canvas_animate!(frame);
+}`,
+
+  waves: `// Wave Visualizer — Animated Sine Waves
+// Demonstrates: while loops, math builtins, canvas animation, pure fn
+
+state time: f64 = 0.0
+
+#[intent("compute composite wave height at position x")]
+pure fn wave(x: f64, t: f64, freq: f64, amp: f64, phase: f64) -> f64 {
+    return amp * math_sin!(x * freq + t + phase);
+}
+
+#[intent("render one animation frame of layered waves")]
+fn frame() {
+    canvas_fill_style!("rgba(10,10,30,0.15)");
+    canvas_fill_rect!(0.0, 0.0, 400.0, 400.0);
+
+    let mut x = 0.0;
+    while x < 400.0 {
+        let y1 = 100.0 + wave(x, time, 0.025, 40.0, 0.0) + wave(x, time * 0.7, 0.04, 20.0, 1.5);
+        let y2 = 200.0 + wave(x, time * 1.3, 0.02, 50.0, 0.8) + wave(x, time * 0.5, 0.05, 15.0, 3.0);
+        let y3 = 300.0 + wave(x, time * 0.9, 0.03, 35.0, 2.1) + wave(x, time * 1.1, 0.015, 25.0, 4.5);
+
+        canvas_fill_style!("#00ffff");
+        canvas_circle!(x, y1, 1.5);
+
+        canvas_fill_style!("#ff00ff");
+        canvas_circle!(x, y2, 1.5);
+
+        canvas_fill_style!("#ffff00");
+        canvas_circle!(x, y3, 1.5);
+
+        x = x + 3.0;
+    }
+
+    canvas_font!("16px monospace");
+    canvas_fill_style!("#00ff88");
+    canvas_text!("C! Wave Visualizer", 110.0, 30.0);
+
+    time = time + 0.04;
+}
+
+fn main() with IO {
+    canvas_size!(400, 400);
+    canvas_fill_style!("#0a0a1e");
+    canvas_fill_rect!(0.0, 0.0, 400.0, 400.0);
+    println!("Wave visualizer — layered sine waves with trail effect!");
+    canvas_animate!(frame);
 }`,
 
   spinning: `// 3D Spinning Cube — animated canvas with starfield

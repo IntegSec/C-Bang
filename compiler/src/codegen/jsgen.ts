@@ -164,6 +164,9 @@ export class JsGenerator {
     }
     this.indentDec();
     this.writeLine('});');
+    // Destructure variants into scope so unqualified names work
+    const variantNames = decl.variants.map(v => v.name).join(', ');
+    this.writeLine(`const { ${variantNames} } = ${decl.name};`);
   }
 
   private emitEnumVariant(variant: EnumVariant, comma: string): void {
