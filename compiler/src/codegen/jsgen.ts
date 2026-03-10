@@ -584,6 +584,46 @@ export class JsGenerator {
         if (expr.name === 'verify') {
           return `/* verify!(${args}) */`;
         }
+        // Math builtins
+        if (expr.name === 'math_sin') return `Math.sin(${args})`;
+        if (expr.name === 'math_cos') return `Math.cos(${args})`;
+        if (expr.name === 'math_sqrt') return `Math.sqrt(${args})`;
+        if (expr.name === 'math_floor') return `Math.floor(${args})`;
+        if (expr.name === 'math_abs') return `Math.abs(${args})`;
+        if (expr.name === 'math_tan') return `Math.tan(${args})`;
+        if (expr.name === 'math_atan2') return `Math.atan2(${args})`;
+        if (expr.name === 'math_min') return `Math.min(${args})`;
+        if (expr.name === 'math_max') return `Math.max(${args})`;
+        if (expr.name === 'math_round') return `Math.round(${args})`;
+        // Canvas builtins
+        if (expr.name === 'canvas_size') return `(() => { __canvas.width = ${expr.args[0] ? this.exprToString(expr.args[0]) : '400'}; __canvas.height = ${expr.args[1] ? this.exprToString(expr.args[1]) : '400'}; })()`;
+        if (expr.name === 'canvas_clear') return `__ctx.clearRect(0, 0, __canvas.width, __canvas.height)`;
+        if (expr.name === 'canvas_fill_style') return `(() => { __ctx.fillStyle = ${args}; })()`;
+        if (expr.name === 'canvas_stroke_style') return `(() => { __ctx.strokeStyle = ${args}; })()`;
+        if (expr.name === 'canvas_line_width') return `(() => { __ctx.lineWidth = ${args}; })()`;
+        if (expr.name === 'canvas_fill_rect') return `__ctx.fillRect(${args})`;
+        if (expr.name === 'canvas_stroke_rect') return `__ctx.strokeRect(${args})`;
+        if (expr.name === 'canvas_line') {
+          const a = expr.args.map(x => this.exprToString(x));
+          return `(() => { __ctx.beginPath(); __ctx.moveTo(${a[0]}, ${a[1]}); __ctx.lineTo(${a[2]}, ${a[3]}); __ctx.stroke(); })()`;
+        }
+        if (expr.name === 'canvas_circle') {
+          const a = expr.args.map(x => this.exprToString(x));
+          return `(() => { __ctx.beginPath(); __ctx.arc(${a[0]}, ${a[1]}, ${a[2]}, 0, 2 * Math.PI); __ctx.fill(); })()`;
+        }
+        if (expr.name === 'canvas_text') return `__ctx.fillText(${args})`;
+        if (expr.name === 'canvas_font') return `(() => { __ctx.font = ${args}; })()`;
+        if (expr.name === 'canvas_begin_path') return `__ctx.beginPath()`;
+        if (expr.name === 'canvas_move_to') return `__ctx.moveTo(${args})`;
+        if (expr.name === 'canvas_line_to') return `__ctx.lineTo(${args})`;
+        if (expr.name === 'canvas_close_path') return `__ctx.closePath()`;
+        if (expr.name === 'canvas_fill') return `__ctx.fill()`;
+        if (expr.name === 'canvas_stroke') return `__ctx.stroke()`;
+        if (expr.name === 'canvas_save') return `__ctx.save()`;
+        if (expr.name === 'canvas_restore') return `__ctx.restore()`;
+        if (expr.name === 'canvas_translate') return `__ctx.translate(${args})`;
+        if (expr.name === 'canvas_rotate') return `__ctx.rotate(${args})`;
+        if (expr.name === 'canvas_scale') return `__ctx.scale(${args})`;
         return `${expr.name}(${args})`;
       }
     }

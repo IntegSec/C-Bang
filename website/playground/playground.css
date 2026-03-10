@@ -271,6 +271,31 @@ body {
   }
 }
 
+/* Canvas output panel */
+.pg-canvas-wrapper {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  min-height: 0;
+}
+
+.pg-canvas-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background: var(--bg-panel);
+  overflow: auto;
+}
+
+.pg-canvas-container img {
+  max-width: 100%;
+  image-rendering: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
 /* Scrollbar styling */
 .pg-output::-webkit-scrollbar,
 .pg-editor::-webkit-scrollbar {

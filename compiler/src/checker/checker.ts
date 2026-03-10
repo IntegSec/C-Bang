@@ -594,6 +594,17 @@ export class Checker {
     for (const arg of expr.args) {
       this.inferExpr(arg);
     }
+
+    // Math macros return f64
+    const mathMacros = [
+      'math_sin', 'math_cos', 'math_tan', 'math_sqrt',
+      'math_floor', 'math_abs', 'math_atan2', 'math_min',
+      'math_max', 'math_round',
+    ];
+    if (mathMacros.includes(expr.name)) {
+      return { kind: 'Primitive', name: 'f64' };
+    }
+
     return { kind: 'Unit' };
   }
 
