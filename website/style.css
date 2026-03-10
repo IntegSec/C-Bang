@@ -1161,6 +1161,109 @@ main {
     font-size: 0.9rem;
 }
 
+/* --- Playground Showcase --- */
+.playground-demos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.playground-demo-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    transition: all var(--transition-base);
+}
+
+.playground-demo-card:hover {
+    border-color: var(--accent-purple);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-glow-purple);
+}
+
+.demo-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+}
+
+.playground-demo-card h3 {
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+}
+
+.playground-demo-card p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* --- Compiler Progress --- */
+.compiler-progress {
+    margin-top: 64px;
+    padding: 40px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+}
+
+.progress-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.progress-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.progress-item.done {
+    background: rgba(34,211,160,0.06);
+    border-color: rgba(34,211,160,0.2);
+}
+
+.progress-item.in-progress {
+    background: rgba(77,124,255,0.06);
+    border-color: rgba(77,124,255,0.2);
+}
+
+.progress-item.upcoming {
+    background: rgba(255,255,255,0.02);
+}
+
+.progress-status {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.progress-item.done .progress-status {
+    color: var(--accent-green);
+}
+
+.progress-item.in-progress .progress-status {
+    color: var(--accent-blue);
+}
+
+.progress-item.upcoming .progress-status {
+    color: var(--text-muted);
+}
+
+.progress-item strong {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.progress-item span {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
 /* --- Animations --- */
 @keyframes fadeInUp {
     from {
@@ -1223,6 +1326,14 @@ main {
 
     .comparison-grid {
         grid-template-columns: 1fr;
+    }
+
+    .playground-demos {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .progress-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -1296,6 +1407,18 @@ main {
 
     .community-cards {
         grid-template-columns: 1fr;
+    }
+
+    .playground-demos {
+        grid-template-columns: 1fr;
+    }
+
+    .progress-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .compiler-progress {
+        padding: 24px;
     }
 
     .cta-section h2 {

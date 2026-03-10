@@ -110,7 +110,7 @@
                     <div>
                         <div class="hero-badge">
                             <span class="dot"></span>
-                            Open Source &mdash; Now in Development
+                            Open Source &mdash; Playground Live &mdash; Contributors Welcome
                         </div>
                         <h1 id="hero-heading">
                             <span class="gradient-text">AI-native.</span><br>
@@ -120,7 +120,8 @@
                             C! is the first programming language designed from the ground up for AI-human collaboration. Linear types eliminate entire vulnerability classes. One codebase deploys everywhere.
                         </p>
                         <div class="hero-actions">
-                            <a href="getting-started.html" class="btn btn-primary btn-lg">Get Started</a>
+                            <a href="playground/index.html" class="btn btn-primary btn-lg">Try in Browser</a>
+                            <a href="getting-started.html" class="btn btn-secondary btn-lg">Get Started</a>
                             <a href="https://github.com/integsec/C-Bang" class="btn btn-github btn-lg" target="_blank" rel="noopener noreferrer">
                                 <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
                                 Star on GitHub
@@ -128,16 +129,16 @@
                         </div>
                         <div class="hero-stats">
                             <div class="hero-stat">
-                                <div class="hero-stat-value"><span class="accent">10+</span></div>
-                                <div class="hero-stat-label">Vulnerability classes eliminated</div>
+                                <div class="hero-stat-value"><span class="accent">588</span></div>
+                                <div class="hero-stat-label">Tests passing</div>
                             </div>
                             <div class="hero-stat">
-                                <div class="hero-stat-value"><span class="accent">3</span></div>
-                                <div class="hero-stat-label">Deployment targets</div>
+                                <div class="hero-stat-value"><span class="accent">6</span></div>
+                                <div class="hero-stat-label">Compiler passes</div>
                             </div>
                             <div class="hero-stat">
-                                <div class="hero-stat-value"><span class="accent">1</span></div>
-                                <div class="hero-stat-label">Unified codebase</div>
+                                <div class="hero-stat-value"><span class="accent">10</span></div>
+                                <div class="hero-stat-label">Playground demos</div>
                             </div>
                         </div>
                     </div>
@@ -218,8 +219,118 @@
             </div>
         </section>
 
+        <!-- Try It Now Section -->
+        <section class="section" id="playground-cta" aria-labelledby="playground-heading">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-label">It's Real &mdash; Try It Now</span>
+                    <h2 id="playground-heading">A working compiler in your browser</h2>
+                    <p>No installation needed. Write C! code, compile to JavaScript, and run it instantly. Actors, contracts, pattern matching, canvas graphics &mdash; all live.</p>
+                </div>
+                <div class="playground-showcase animate-on-scroll">
+                    <div class="playground-demos">
+                        <div class="playground-demo-card">
+                            <div class="demo-icon">&#127912;</div>
+                            <h3>Mandelbrot Fractal</h3>
+                            <p>10,000 pixels computed with nested loops and pure functions. Rainbow coloring via string interpolation.</p>
+                        </div>
+                        <div class="playground-demo-card">
+                            <div class="demo-icon">&#127744;</div>
+                            <h3>3D Spinning Cube</h3>
+                            <p>Real-time 3D wireframe with perspective projection, animated at 60fps using canvas_animate! macro.</p>
+                        </div>
+                        <div class="playground-demo-card">
+                            <div class="demo-icon">&#128172;</div>
+                            <h3>Chat App Actors</h3>
+                            <p>Multiple actors communicating via typed messages. Join rooms, send messages, track stats.</p>
+                        </div>
+                        <div class="playground-demo-card">
+                            <div class="demo-icon">&#128176;</div>
+                            <h3>Token Contract</h3>
+                            <p>ERC20-style token with minting, burning, and an NFT marketplace. Intent-annotated smart contracts.</p>
+                        </div>
+                        <div class="playground-demo-card">
+                            <div class="demo-icon">&#127752;</div>
+                            <h3>Rainbow Spirograph</h3>
+                            <p>Generative art with pure mathematical functions. Dynamic RGB colors via string interpolation.</p>
+                        </div>
+                        <div class="playground-demo-card">
+                            <div class="demo-icon">&#127926;</div>
+                            <h3>Wave Visualizer</h3>
+                            <p>Three layered sine waves with phosphor trail effect. Composable pure functions for wave math.</p>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 40px;">
+                        <a href="playground/index.html" class="btn btn-primary btn-lg">Open the Playground</a>
+                    </div>
+                </div>
+
+                <div class="compiler-progress animate-on-scroll">
+                    <h3 style="text-align: center; margin-bottom: 32px;">Compiler Pipeline Status</h3>
+                    <div class="progress-grid">
+                        <div class="progress-item done">
+                            <span class="progress-status">&#10003;</span>
+                            <div>
+                                <strong>Lexer</strong>
+                                <span>80 tests</span>
+                            </div>
+                        </div>
+                        <div class="progress-item done">
+                            <span class="progress-status">&#10003;</span>
+                            <div>
+                                <strong>Parser</strong>
+                                <span>121 tests</span>
+                            </div>
+                        </div>
+                        <div class="progress-item done">
+                            <span class="progress-status">&#10003;</span>
+                            <div>
+                                <strong>Semantic Analysis</strong>
+                                <span>57 tests</span>
+                            </div>
+                        </div>
+                        <div class="progress-item done">
+                            <span class="progress-status">&#10003;</span>
+                            <div>
+                                <strong>Type Checker</strong>
+                                <span>65 tests</span>
+                            </div>
+                        </div>
+                        <div class="progress-item done">
+                            <span class="progress-status">&#10003;</span>
+                            <div>
+                                <strong>Effect Checker</strong>
+                                <span>30 tests</span>
+                            </div>
+                        </div>
+                        <div class="progress-item in-progress">
+                            <span class="progress-status">&#9881;</span>
+                            <div>
+                                <strong>JS Codegen</strong>
+                                <span>74 tests</span>
+                            </div>
+                        </div>
+                        <div class="progress-item upcoming">
+                            <span class="progress-status">&#9744;</span>
+                            <div>
+                                <strong>WASM Codegen</strong>
+                                <span>20 tests</span>
+                            </div>
+                        </div>
+                        <div class="progress-item upcoming">
+                            <span class="progress-status">&#9744;</span>
+                            <div>
+                                <strong>LLVM Backend</strong>
+                                <span>Planned</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Features Section -->
-        <section class="section" id="features" aria-labelledby="features-heading">
+        <section class="section section-dark" id="features" aria-labelledby="features-heading">
             <div class="container">
                 <div class="section-header animate-on-scroll">
                     <span class="section-label">Why C!</span>
@@ -458,10 +569,10 @@
         <!-- CTA Section -->
         <section class="cta-section" aria-labelledby="cta-heading">
             <div class="container">
-                <h2 id="cta-heading">Ready to build the future?</h2>
-                <p>C! is open source and welcoming contributors &mdash; both human and AI. Join us in building the language that makes secure software the default.</p>
+                <h2 id="cta-heading">Help build the language</h2>
+                <p>C! is open source with 35+ open issues, a working compiler, and a VS Code extension. We welcome contributors &mdash; humans and AI agents alike. Pick an issue and ship your first PR.</p>
                 <div class="cta-actions">
-                    <a href="getting-started.html" class="btn btn-primary btn-lg">Get Started</a>
+                    <a href="https://github.com/integsec/C-Bang/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22" class="btn btn-primary btn-lg" target="_blank" rel="noopener noreferrer">Good First Issues</a>
                     <a href="https://github.com/integsec/C-Bang" class="btn btn-github btn-lg" target="_blank" rel="noopener noreferrer">
                         <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
                         Star on GitHub
@@ -487,6 +598,7 @@
                     <ul>
                         <li><a href="docs.html">Documentation</a></li>
                         <li><a href="getting-started.html">Getting Started</a></li>
+                        <li><a href="playground/index.html">Playground</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
@@ -509,7 +621,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <span>&copy; 2025 IntegSec. C! is open-source software.</span>
+                <span>&copy; 2026 IntegSec. C! is open-source software.</span>
                 <a href="https://github.com/integsec/C-Bang" target="_blank" rel="noopener noreferrer">github.com/integsec/C-Bang</a>
             </div>
         </div>
