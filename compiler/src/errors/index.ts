@@ -15,28 +15,65 @@ export interface Diagnostic {
   suggestion?: string | undefined;
 }
 
-export function formatDiagnostic(diagnostic: Diagnostic, source: string): string {
+// ANSI color codes
+const ANSI_RED = '\x1b[31m';
+const ANSI_YELLOW = '\x1b[33m';
+const ANSI_CYAN = '\x1b[36m';
+const ANSI_BOLD = '\x1b[1m';
+const ANSI_RESET = '\x1b[0m';
+
+function severityColor(severity: Severity): string {
+  switch (severity) {
+    case 'error': return ANSI_RED;
+    case 'warning': return ANSI_YELLOW;
+    case 'info': return ANSI_CYAN;
+  }
+}
+
+function severityLabel(severity: Severity): string {
+  switch (severity) {
+    case 'error': return 'error';
+    case 'warning': return 'warning';
+    case 'info': return 'info';
+  }
+}
+
+export function formatDiagnostic(diagnostic: Diagnostic, source: string, options?: { noColor?: boolean }): string {
   const { severity, code, message, span, notes, suggestion } = diagnostic;
-  const prefix = severity === 'error' ? 'ERROR' : severity === 'warning' ? 'WARN' : 'INFO';
+  const noColor = options?.noColor ?? false;
+
+  const color = noColor ? '' : severityColor(severity);
+  const bold = noColor ? '' : ANSI_BOLD;
+  const cyan = noColor ? '' : ANSI_CYAN;
+  const reset = noColor ? '' : ANSI_RESET;
+
+  const label = severityLabel(severity);
   const lines = source.split('\n');
   const line = lines[span.start.line - 1] ?? '';
 
-  let output = `${prefix}[${code}]: ${message}\n`;
-  output += `  --> ${span.file}:${span.start.line}:${span.start.column}\n`;
-  output += `   |\n`;
-  output += `${String(span.start.line).padStart(3)} | ${line}\n`;
+  const lineNumStr = String(span.start.line);
+  const gutter = ' '.repeat(lineNumStr.length + 1);
 
-  // Underline
+  let output = `${color}${bold}${label}[${code}]${reset}${bold}: ${message}${reset}\n`;
+  output += `${gutter}${cyan}-->${reset} ${span.file}:${span.start.line}:${span.start.column}\n`;
+  output += `${gutter}${cyan} |${reset}\n`;
+  output += `${cyan}${lineNumStr.padStart(lineNumStr.length + 1)} |${reset} ${line}\n`;
+
+  // Caret underline
   const underlineStart = span.start.column - 1;
-  const underlineLen = Math.max(1, span.end.column - span.start.column);
-  output += `   | ${' '.repeat(underlineStart)}${'^'.repeat(underlineLen)}\n`;
+  const underlineLen = Math.max(1,
+    span.start.line === span.end.line
+      ? span.end.column - span.start.column
+      : line.length - underlineStart,
+  );
+  output += `${gutter}${cyan} |${reset} ${' '.repeat(underlineStart)}${color}${'^'.repeat(underlineLen)}${reset}\n`;
 
   for (const note of notes) {
-    output += `   = note: ${note}\n`;
+    output += `${gutter}${cyan} =${reset} ${bold}note${reset}: ${note}\n`;
   }
 
   if (suggestion) {
-    output += `   = suggestion: ${suggestion}\n`;
+    output += `${gutter}${cyan} =${reset} ${bold}suggestion${reset}: ${suggestion}\n`;
   }
 
   return output;
