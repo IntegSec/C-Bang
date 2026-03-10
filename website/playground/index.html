@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C! Playground — Try C! in Your Browser</title>
+    <meta name="description" content="Write, compile, and run C! code directly in your browser. No installation required.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="playground.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="pg-header">
+        <div class="pg-header-left">
+            <a href="../index.html" class="pg-logo">
+                <span class="logo-c">C</span><span class="logo-bang">!</span>
+            </a>
+            <span class="pg-title">Playground</span>
+            <a href="../index.html" class="pg-back-link">&larr; Back to site</a>
+        </div>
+        <div class="pg-header-right">
+            <select id="examples-select" class="pg-examples-select" aria-label="Load example">
+                <option value="">Load example...</option>
+                <option value="hello">Hello World</option>
+                <option value="fibonacci">Fibonacci</option>
+                <option value="actor">Actor</option>
+                <option value="pattern">Pattern Matching</option>
+            </select>
+            <span class="pg-shortcut-hint">Ctrl+Enter to run</span>
+            <button id="run-btn" class="pg-run-btn">
+                <span class="play-icon">&#9654;</span> Run
+            </button>
+        </div>
+    </header>
+
+    <!-- Main layout -->
+    <div class="pg-main">
+        <!-- Editor panel -->
+        <div class="pg-editor-panel">
+            <div class="pg-panel-header">Editor</div>
+            <textarea id="editor" class="pg-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Write C! code here..."></textarea>
+        </div>
+
+        <!-- Output panel -->
+        <div class="pg-output-panel">
+            <div class="pg-js-output-wrapper">
+                <div class="pg-panel-header">JavaScript Output</div>
+                <pre id="js-output" class="pg-output"></pre>
+            </div>
+            <div class="pg-console-wrapper">
+                <div class="pg-panel-header">Console Output</div>
+                <pre id="console-output" class="pg-output"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load compiled C! compiler bundle, then playground logic -->
+    <script src="cbang-compiler.js"></script>
+    <script src="playground.js"></script>
+</body>
+</html>

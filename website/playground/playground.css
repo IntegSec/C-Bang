@@ -1,0 +1,294 @@
+/* C! Playground — Dark Theme */
+
+:root {
+  --bg-primary: #0f0f1a;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --bg-panel: #141425;
+  --border: #2a2a4a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0b0;
+  --text-muted: #666680;
+  --accent-blue: #4fc3f7;
+  --accent-green: #66bb6a;
+  --accent-purple: #ab47bc;
+  --accent-orange: #ffa726;
+  --error-red: #ef5350;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.pg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  height: 48px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.pg-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pg-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.pg-logo .logo-c { color: var(--accent-blue); }
+.pg-logo .logo-bang { color: var(--accent-green); }
+
+.pg-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.pg-back-link {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.pg-back-link:hover {
+  color: var(--accent-blue);
+}
+
+.pg-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Examples dropdown */
+.pg-examples-select {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  outline: none;
+}
+
+.pg-examples-select:focus {
+  border-color: var(--accent-blue);
+}
+
+/* Run button */
+.pg-run-btn {
+  background: var(--accent-green);
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background 0.2s;
+}
+
+.pg-run-btn:hover {
+  background: #81c784;
+}
+
+.pg-run-btn:active {
+  background: #4caf50;
+}
+
+.pg-run-btn .play-icon {
+  font-size: 0.7rem;
+}
+
+/* Main layout */
+.pg-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Panels */
+.pg-editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+
+.pg-output-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pg-panel-header {
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  height: 32px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+/* Editor textarea */
+.pg-editor {
+  flex: 1;
+  width: 100%;
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: none;
+  padding: 1rem;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  tab-size: 4;
+}
+
+.pg-editor::placeholder {
+  color: var(--text-muted);
+}
+
+/* Output areas */
+.pg-js-output-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pg-console-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  min-height: 0;
+}
+
+.pg-output {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+}
+
+.pg-output.error {
+  color: var(--error-red);
+}
+
+.pg-output.success {
+  color: var(--accent-green);
+}
+
+/* Keyboard shortcut hint */
+.pg-shortcut-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .pg-shortcut-hint {
+    display: inline;
+  }
+}
+
+/* Responsive: stack on mobile */
+@media (max-width: 768px) {
+  .pg-main {
+    flex-direction: column;
+  }
+
+  .pg-editor-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex: none;
+    height: 40%;
+  }
+
+  .pg-output-panel {
+    flex: 1;
+  }
+
+  .pg-header {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .pg-title {
+    display: none;
+  }
+}
+
+/* Scrollbar styling */
+.pg-output::-webkit-scrollbar,
+.pg-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pg-output::-webkit-scrollbar-track,
+.pg-editor::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pg-output::-webkit-scrollbar-thumb,
+.pg-editor::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.pg-output::-webkit-scrollbar-thumb:hover,
+.pg-editor::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5a;
+}

@@ -13,7 +13,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint src/",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "build:browser": "node build-browser.mjs"
   },
   "keywords": [
     "programming-language",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "esbuild": "^0.27.3",
     "eslint": "^9.0.0",
     "fast-check": "^4.5.3",
     "tsup": "^8.0.0",
