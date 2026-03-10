@@ -15,9 +15,10 @@
  *   cbang --help              Show help
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
+import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { resolve, basename, join } from 'node:path';
 import { execSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { Lexer, TokenType, Parser, formatDiagnostic, createError, VERSION } from './index.js';
 import { Resolver } from './semantic/index.js';
@@ -400,15 +401,26 @@ async function compileWasm(filePath: string): Promise<Uint8Array> {
 
 async function runCommand(filePath: string): Promise<void> {
   const jsCode = await compile(filePath);
-  // Execute the generated JavaScript using Node.js
+
+  // Append a main() call if the generated code defines a main function
+  const codeToRun = /^(?:export )?(?:async )?function main\b/m.test(jsCode)
+    ? jsCode + '\nmain();\n'
+    : jsCode;
+
+  // Write to a temp file and execute — avoids shell escaping and
+  // Node.js TypeScript-mode issues with node -e on multi-line code.
+  const tmpFile = join(tmpdir(), `cbang_run_${Date.now()}.mjs`);
+  writeFileSync(tmpFile, codeToRun, 'utf-8');
   try {
-    execSync(`node -e ${JSON.stringify(jsCode)}`, {
+    execSync(`node "${tmpFile}"`, {
       stdio: 'inherit',
       env: { ...process.env },
     });
   } catch (e: any) {
     if (e.status) process.exit(e.status);
     process.exit(1);
+  } finally {
+    try { unlinkSync(tmpFile); } catch { /* ignore cleanup errors */ }
   }
 }
 

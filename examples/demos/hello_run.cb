@@ -1,0 +1,5 @@
+fn main() with IO {
+    println!("Hello from C!");
+    let x = 2 + 3;
+    println!("2 + 3 = {x}");
+}
