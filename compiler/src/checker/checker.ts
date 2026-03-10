@@ -599,7 +599,7 @@ export class Checker {
     const mathMacros = [
       'math_sin', 'math_cos', 'math_tan', 'math_sqrt',
       'math_floor', 'math_abs', 'math_atan2', 'math_min',
-      'math_max', 'math_round',
+      'math_max', 'math_round', 'math_random',
     ];
     if (mathMacros.includes(expr.name)) {
       return { kind: 'Primitive', name: 'f64' };

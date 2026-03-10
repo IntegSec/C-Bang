@@ -624,6 +624,8 @@ export class JsGenerator {
         if (expr.name === 'canvas_translate') return `__ctx.translate(${args})`;
         if (expr.name === 'canvas_rotate') return `__ctx.rotate(${args})`;
         if (expr.name === 'canvas_scale') return `__ctx.scale(${args})`;
+        if (expr.name === 'canvas_animate') return `(function __animLoop() { ${args}(); requestAnimationFrame(__animLoop); })()`;
+        if (expr.name === 'math_random') return `Math.random()`;
         return `${expr.name}(${args})`;
       }
     }

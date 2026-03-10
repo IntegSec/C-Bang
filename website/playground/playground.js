@@ -202,112 +202,97 @@ fn main() with IO {
     println!("Contracts compiled to JavaScript classes!");
 }`,
 
-  spinning: `// 3D Spinning Cube — real graphics with canvas
-// Demonstrates: canvas API, math builtins, pure functions, 3D projection
+  spinning: `// 3D Spinning Cube — animated canvas with starfield
+// Demonstrates: state, canvas_animate!, math builtins, intents
 
-#[intent("project a 3D point onto the 2D canvas with perspective")]
-fn project(x: f64, y: f64, z: f64, angle_y: f64, angle_x: f64) {
-    // Rotate around Y axis
-    let cos_y = math_cos!(angle_y);
-    let sin_y = math_sin!(angle_y);
-    let rx = x * cos_y + z * sin_y;
-    let rz = z * cos_y - x * sin_y;
+// Global state for animation
+state angle: f64 = 0.0
+state sx0: f64 = 0.0; state sy0: f64 = 0.0; state sb0: f64 = 0.0
+state sx1: f64 = 0.0; state sy1: f64 = 0.0; state sb1: f64 = 0.0
+state sx2: f64 = 0.0; state sy2: f64 = 0.0; state sb2: f64 = 0.0
+state sx3: f64 = 0.0; state sy3: f64 = 0.0; state sb3: f64 = 0.0
+state sx4: f64 = 0.0; state sy4: f64 = 0.0; state sb4: f64 = 0.0
+state sx5: f64 = 0.0; state sy5: f64 = 0.0; state sb5: f64 = 0.0
+state sx6: f64 = 0.0; state sy6: f64 = 0.0; state sb6: f64 = 0.0
+state sx7: f64 = 0.0; state sy7: f64 = 0.0; state sb7: f64 = 0.0
+state sx8: f64 = 0.0; state sy8: f64 = 0.0; state sb8: f64 = 0.0
+state sx9: f64 = 0.0; state sy9: f64 = 0.0; state sb9: f64 = 0.0
 
-    // Rotate around X axis
-    let cos_x = math_cos!(angle_x);
-    let sin_x = math_sin!(angle_x);
-    let ry = y * cos_x - rz * sin_x;
-    let rz2 = rz * cos_x + y * sin_x;
-
-    // Perspective projection
-    let dist = 5.0;
-    let scale = dist / (dist + rz2);
-    let sx = 200.0 + rx * scale * 120.0;
-    let sy = 200.0 + ry * scale * 120.0;
-
-    // Draw a vertex dot
+#[intent("draw a star dot at given position")]
+fn draw_star(x: f64, y: f64, b: f64) {
     canvas_fill_style!("#ffffff");
-    canvas_circle!(sx, sy, 3.0 * scale);
-
-    // Store projected coords in global arrays
-    println!("{sx},{sy}");
+    canvas_circle!(x, y, 0.5 + b * 1.5);
 }
 
-#[intent("draw a colored line between two 3D points")]
-fn draw_edge(x1: f64, y1: f64, z1: f64, x2: f64, y2: f64, z2: f64, angle_y: f64, angle_x: f64, color: String) {
-    let cos_y = math_cos!(angle_y);
-    let sin_y = math_sin!(angle_y);
-    let cos_x = math_cos!(angle_x);
-    let sin_x = math_sin!(angle_x);
-    let dist = 5.0;
-
-    // Project point 1
-    let rx1 = x1 * cos_y + z1 * sin_y;
-    let rz1 = z1 * cos_y - x1 * sin_y;
-    let ry1 = y1 * cos_x - rz1 * sin_x;
-    let rz1b = rz1 * cos_x + y1 * sin_x;
-    let s1 = dist / (dist + rz1b);
-    let sx1 = 200.0 + rx1 * s1 * 120.0;
-    let sy1 = 200.0 + ry1 * s1 * 120.0;
-
-    // Project point 2
-    let rx2 = x2 * cos_y + z2 * sin_y;
-    let rz2 = z2 * cos_y - x2 * sin_y;
-    let ry2 = y2 * cos_x - rz2 * sin_x;
-    let rz2b = rz2 * cos_x + y2 * sin_x;
-    let s2 = dist / (dist + rz2b);
-    let sx2 = 200.0 + rx2 * s2 * 120.0;
-    let sy2 = 200.0 + ry2 * s2 * 120.0;
-
-    // Draw edge
+#[intent("draw a colored edge between two rotated 3D points")]
+fn draw_edge(x1: f64, y1: f64, z1: f64, x2: f64, y2: f64, z2: f64, ay: f64, ax: f64, color: String) {
+    let cy = math_cos!(ay); let sny = math_sin!(ay);
+    let cx = math_cos!(ax); let snx = math_sin!(ax);
+    let d = 5.0;
+    let a1 = x1 * cy + z1 * sny;
+    let b1 = z1 * cy - x1 * sny;
+    let c1 = y1 * cx - b1 * snx;
+    let d1 = b1 * cx + y1 * snx;
+    let p1 = d / (d + d1);
+    let a2 = x2 * cy + z2 * sny;
+    let b2 = z2 * cy - x2 * sny;
+    let c2 = y2 * cx - b2 * snx;
+    let d2 = b2 * cx + y2 * snx;
+    let p2 = d / (d + d2);
     canvas_stroke_style!(color);
     canvas_line_width!(2.0);
-    canvas_line!(sx1, sy1, sx2, sy2);
+    canvas_line!(200.0 + a1 * p1 * 100.0, 200.0 + c1 * p1 * 100.0, 200.0 + a2 * p2 * 100.0, 200.0 + c2 * p2 * 100.0);
 }
 
-#[intent("render a wireframe cube with colored faces")]
-fn draw_cube(angle_y: f64, angle_x: f64) {
-    // 8 vertices of a unit cube centered at origin
-    // Front face edges (z = -1)
-    draw_edge(0.0-1.0, 0.0-1.0, 0.0-1.0,  1.0, 0.0-1.0, 0.0-1.0, angle_y, angle_x, "#00ffff");
-    draw_edge( 1.0, 0.0-1.0, 0.0-1.0,  1.0,  1.0, 0.0-1.0, angle_y, angle_x, "#00ffff");
-    draw_edge( 1.0,  1.0, 0.0-1.0, 0.0-1.0,  1.0, 0.0-1.0, angle_y, angle_x, "#00ffff");
-    draw_edge(0.0-1.0,  1.0, 0.0-1.0, 0.0-1.0, 0.0-1.0, 0.0-1.0, angle_y, angle_x, "#00ffff");
+#[intent("render wireframe cube at given rotation angles")]
+fn draw_cube(ay: f64, ax: f64) {
+    draw_edge(0.0-1.0,0.0-1.0,0.0-1.0, 1.0,0.0-1.0,0.0-1.0, ay,ax,"#00ffff");
+    draw_edge(1.0,0.0-1.0,0.0-1.0, 1.0,1.0,0.0-1.0, ay,ax,"#00ffff");
+    draw_edge(1.0,1.0,0.0-1.0, 0.0-1.0,1.0,0.0-1.0, ay,ax,"#00ffff");
+    draw_edge(0.0-1.0,1.0,0.0-1.0, 0.0-1.0,0.0-1.0,0.0-1.0, ay,ax,"#00ffff");
+    draw_edge(0.0-1.0,0.0-1.0,1.0, 1.0,0.0-1.0,1.0, ay,ax,"#ff00ff");
+    draw_edge(1.0,0.0-1.0,1.0, 1.0,1.0,1.0, ay,ax,"#ff00ff");
+    draw_edge(1.0,1.0,1.0, 0.0-1.0,1.0,1.0, ay,ax,"#ff00ff");
+    draw_edge(0.0-1.0,1.0,1.0, 0.0-1.0,0.0-1.0,1.0, ay,ax,"#ff00ff");
+    draw_edge(0.0-1.0,0.0-1.0,0.0-1.0, 0.0-1.0,0.0-1.0,1.0, ay,ax,"#ffff00");
+    draw_edge(1.0,0.0-1.0,0.0-1.0, 1.0,0.0-1.0,1.0, ay,ax,"#ffff00");
+    draw_edge(1.0,1.0,0.0-1.0, 1.0,1.0,1.0, ay,ax,"#ffff00");
+    draw_edge(0.0-1.0,1.0,0.0-1.0, 0.0-1.0,1.0,1.0, ay,ax,"#ffff00");
+}
 
-    // Back face edges (z = 1)
-    draw_edge(0.0-1.0, 0.0-1.0, 1.0,  1.0, 0.0-1.0, 1.0, angle_y, angle_x, "#ff00ff");
-    draw_edge( 1.0, 0.0-1.0, 1.0,  1.0,  1.0, 1.0, angle_y, angle_x, "#ff00ff");
-    draw_edge( 1.0,  1.0, 1.0, 0.0-1.0,  1.0, 1.0, angle_y, angle_x, "#ff00ff");
-    draw_edge(0.0-1.0,  1.0, 1.0, 0.0-1.0, 0.0-1.0, 1.0, angle_y, angle_x, "#ff00ff");
-
-    // Connecting edges
-    draw_edge(0.0-1.0, 0.0-1.0, 0.0-1.0, 0.0-1.0, 0.0-1.0, 1.0, angle_y, angle_x, "#ffff00");
-    draw_edge( 1.0, 0.0-1.0, 0.0-1.0,  1.0, 0.0-1.0, 1.0, angle_y, angle_x, "#ffff00");
-    draw_edge( 1.0,  1.0, 0.0-1.0,  1.0,  1.0, 1.0, angle_y, angle_x, "#ffff00");
-    draw_edge(0.0-1.0,  1.0, 0.0-1.0, 0.0-1.0,  1.0, 1.0, angle_y, angle_x, "#ffff00");
+#[intent("render one animation frame: starfield + spinning cube")]
+fn frame() {
+    canvas_fill_style!("#0a0a2e");
+    canvas_fill_rect!(0.0, 0.0, 400.0, 400.0);
+    draw_star(sx0,sy0,sb0); draw_star(sx1,sy1,sb1);
+    draw_star(sx2,sy2,sb2); draw_star(sx3,sy3,sb3);
+    draw_star(sx4,sy4,sb4); draw_star(sx5,sy5,sb5);
+    draw_star(sx6,sy6,sb6); draw_star(sx7,sy7,sb7);
+    draw_star(sx8,sy8,sb8); draw_star(sx9,sy9,sb9);
+    draw_cube(angle, angle * 0.6);
+    canvas_font!("16px monospace");
+    canvas_fill_style!("#00ff88");
+    canvas_text!("C! 3D Cube", 148.0, 30.0);
+    canvas_font!("11px monospace");
+    canvas_fill_style!("#555577");
+    canvas_text!("canvas_animate! + math builtins", 100.0, 390.0);
+    angle = angle + 0.012;
 }
 
 fn main() with IO {
     canvas_size!(400, 400);
-
-    // Dark background
-    canvas_fill_style!("#0a0a2e");
-    canvas_fill_rect!(0.0, 0.0, 400.0, 400.0);
-
-    // Title
-    canvas_font!("16px monospace");
-    canvas_fill_style!("#00ff88");
-    canvas_text!("C! 3D Cube", 150.0, 30.0);
-
-    // Draw cube rotated
-    draw_cube(0.8, 0.5);
-
-    // Label
-    canvas_font!("12px monospace");
-    canvas_fill_style!("#666688");
-    canvas_text!("Rendered with C! canvas API", 110.0, 390.0);
-
-    println!("3D cube rendered on canvas!");
+    sx0 = math_random!() * 400.0; sy0 = math_random!() * 400.0; sb0 = 0.3 + math_random!() * 0.7;
+    sx1 = math_random!() * 400.0; sy1 = math_random!() * 400.0; sb1 = 0.3 + math_random!() * 0.7;
+    sx2 = math_random!() * 400.0; sy2 = math_random!() * 400.0; sb2 = 0.3 + math_random!() * 0.7;
+    sx3 = math_random!() * 400.0; sy3 = math_random!() * 400.0; sb3 = 0.3 + math_random!() * 0.7;
+    sx4 = math_random!() * 400.0; sy4 = math_random!() * 400.0; sb4 = 0.3 + math_random!() * 0.7;
+    sx5 = math_random!() * 400.0; sy5 = math_random!() * 400.0; sb5 = 0.3 + math_random!() * 0.7;
+    sx6 = math_random!() * 400.0; sy6 = math_random!() * 400.0; sb6 = 0.3 + math_random!() * 0.7;
+    sx7 = math_random!() * 400.0; sy7 = math_random!() * 400.0; sb7 = 0.3 + math_random!() * 0.7;
+    sx8 = math_random!() * 400.0; sy8 = math_random!() * 400.0; sb8 = 0.3 + math_random!() * 0.7;
+    sx9 = math_random!() * 400.0; sy9 = math_random!() * 400.0; sb9 = 0.3 + math_random!() * 0.7;
+    println!("3D spinning cube with starfield!");
+    canvas_animate!(frame);
 }`,
 };
 
@@ -389,14 +374,19 @@ function run() {
     execCode += '\nmain();';
   }
 
-  // Detect if code uses canvas functions
+  // Detect if code uses canvas functions or animation
   var usesCanvas = execCode.indexOf('__canvas') !== -1 || execCode.indexOf('__ctx') !== -1;
+  var isAnimated = execCode.indexOf('__animLoop') !== -1;
 
   // Execute in a sandboxed iframe via Blob URL to avoid needing unsafe-eval.
   // The iframe posts console output back to us via postMessage.
+  // For animated content, logs are sent before the animation loop starts,
+  // and the iframe stays alive to keep rendering.
   var iframeHtml = '<!DOCTYPE html><html><head></head>' +
-    '<body style="margin:0;padding:0;background:#0a0a2e;"><script>' +
-    'var __canvas = document.createElement("canvas"); __canvas.id = "c"; __canvas.width = 400; __canvas.height = 400; document.body.appendChild(__canvas);' +
+    '<body style="margin:0;padding:0;background:transparent;overflow:hidden;"><script>' +
+    'var __canvas = document.createElement("canvas"); __canvas.id = "c"; __canvas.width = 400; __canvas.height = 400;' +
+    '__canvas.style.display = "block"; __canvas.style.margin = "0 auto";' +
+    'document.body.appendChild(__canvas);' +
     'var __ctx = __canvas.getContext("2d");' +
     'var __logs = [];' +
     'console.log = function() { __logs.push(Array.prototype.slice.call(arguments).join(" ")); };' +
@@ -417,13 +407,31 @@ function run() {
   // Remove any previous sandbox iframe
   var oldFrame = document.getElementById('cbang-sandbox');
   if (oldFrame) oldFrame.remove();
+  // Also clear any previous live canvas iframe
+  var oldLive = document.getElementById('cbang-live-canvas');
+  if (oldLive) oldLive.remove();
 
   var iframe = document.createElement('iframe');
-  iframe.id = 'cbang-sandbox';
-  iframe.style.display = 'none';
+  iframe.id = isAnimated ? 'cbang-live-canvas' : 'cbang-sandbox';
   iframe.sandbox = 'allow-scripts';
   iframe.src = url;
-  document.body.appendChild(iframe);
+
+  if (isAnimated && usesCanvas) {
+    // Show the iframe live inside the canvas panel
+    iframe.style.width = '400px';
+    iframe.style.height = '400px';
+    iframe.style.border = 'none';
+    iframe.style.display = 'block';
+    var canvasPanel = document.getElementById('canvas-panel');
+    var canvasContainer = canvasPanel.querySelector('.pg-canvas-container');
+    var canvasImg = document.getElementById('canvas-img');
+    canvasImg.style.display = 'none';
+    canvasContainer.appendChild(iframe);
+    canvasPanel.style.display = 'flex';
+  } else {
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+  }
 
   // Listen for result
   var timeout = setTimeout(function () {
@@ -431,7 +439,7 @@ function run() {
     consoleOutput.textContent = '(timeout — program took too long)';
     consoleOutput.className = 'pg-output error';
     resetRunBtn();
-    iframe.remove();
+    if (!isAnimated) { iframe.remove(); }
     URL.revokeObjectURL(url);
   }, 15000);
 
@@ -452,20 +460,31 @@ function run() {
       consoleOutput.className = 'pg-output success';
     }
 
-    // Show canvas output if available — only accept data: URIs
     var canvasPanel = document.getElementById('canvas-panel');
     var canvasImg = document.getElementById('canvas-img');
-    var canvasData = e.data.canvasData;
-    if (usesCanvas && typeof canvasData === 'string' && canvasData.indexOf('data:image/') === 0) {
-      canvasImg.src = canvasData;
-      canvasPanel.style.display = 'flex';
+
+    if (isAnimated && usesCanvas) {
+      // Iframe is already live in the canvas panel — keep it running
+      canvasImg.style.display = 'none';
+    } else if (usesCanvas) {
+      // Static canvas — show captured image
+      var canvasData = e.data.canvasData;
+      if (typeof canvasData === 'string' && canvasData.indexOf('data:image/') === 0) {
+        canvasImg.style.display = '';
+        canvasImg.src = canvasData;
+        canvasPanel.style.display = 'flex';
+      } else {
+        canvasPanel.style.display = 'none';
+      }
+      iframe.remove();
+      URL.revokeObjectURL(url);
     } else {
       canvasPanel.style.display = 'none';
+      iframe.remove();
+      URL.revokeObjectURL(url);
     }
 
     resetRunBtn();
-    iframe.remove();
-    URL.revokeObjectURL(url);
   }
   window.addEventListener('message', onMessage);
 }
