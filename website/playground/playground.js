@@ -207,16 +207,36 @@ fn main() with IO {
 
 // Global state for animation
 state angle: f64 = 0.0
-state sx0: f64 = 0.0; state sy0: f64 = 0.0; state sb0: f64 = 0.0
-state sx1: f64 = 0.0; state sy1: f64 = 0.0; state sb1: f64 = 0.0
-state sx2: f64 = 0.0; state sy2: f64 = 0.0; state sb2: f64 = 0.0
-state sx3: f64 = 0.0; state sy3: f64 = 0.0; state sb3: f64 = 0.0
-state sx4: f64 = 0.0; state sy4: f64 = 0.0; state sb4: f64 = 0.0
-state sx5: f64 = 0.0; state sy5: f64 = 0.0; state sb5: f64 = 0.0
-state sx6: f64 = 0.0; state sy6: f64 = 0.0; state sb6: f64 = 0.0
-state sx7: f64 = 0.0; state sy7: f64 = 0.0; state sb7: f64 = 0.0
-state sx8: f64 = 0.0; state sy8: f64 = 0.0; state sb8: f64 = 0.0
-state sx9: f64 = 0.0; state sy9: f64 = 0.0; state sb9: f64 = 0.0
+state sx0: f64 = 0.0
+state sy0: f64 = 0.0
+state sb0: f64 = 0.0
+state sx1: f64 = 0.0
+state sy1: f64 = 0.0
+state sb1: f64 = 0.0
+state sx2: f64 = 0.0
+state sy2: f64 = 0.0
+state sb2: f64 = 0.0
+state sx3: f64 = 0.0
+state sy3: f64 = 0.0
+state sb3: f64 = 0.0
+state sx4: f64 = 0.0
+state sy4: f64 = 0.0
+state sb4: f64 = 0.0
+state sx5: f64 = 0.0
+state sy5: f64 = 0.0
+state sb5: f64 = 0.0
+state sx6: f64 = 0.0
+state sy6: f64 = 0.0
+state sb6: f64 = 0.0
+state sx7: f64 = 0.0
+state sy7: f64 = 0.0
+state sb7: f64 = 0.0
+state sx8: f64 = 0.0
+state sy8: f64 = 0.0
+state sb8: f64 = 0.0
+state sx9: f64 = 0.0
+state sy9: f64 = 0.0
+state sb9: f64 = 0.0
 
 #[intent("draw a star dot at given position")]
 fn draw_star(x: f64, y: f64, b: f64) {
