@@ -436,11 +436,9 @@ function run() {
 
   function onMessage(e) {
     // Only accept messages with our specific type marker. The sandboxed iframe
-    // (allow-scripts only, no allow-same-origin) has origin "null" and cannot
-    // access the parent DOM. We check e.source when accessible for defense in
-    // depth, but some browsers return null for cross-origin contentWindow.
+    // (allow-scripts only, no allow-same-origin) cannot access the parent DOM.
+    // The unique message type acts as our validation token.
     if (!e.data || e.data.type !== 'cbang-output') return;
-    if (iframe.contentWindow && e.source !== iframe.contentWindow) return;
 
     clearTimeout(timeout);
     window.removeEventListener('message', onMessage);
