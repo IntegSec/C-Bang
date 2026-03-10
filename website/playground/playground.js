@@ -47,6 +47,196 @@ fn describe(s: Shape) -> String {
         Rect(w, h) => { return "rectangle"; },
     }
 }`,
+
+  chat: `// Chat Application — actors for real-time messaging
+// Demonstrates actor model, message handling, and state management
+
+type Message {
+    sender: String,
+    text: String,
+}
+
+actor ChatRoom {
+    state members: i32 = 0
+    state message_count: i32 = 0
+
+    on Join(name: String) {
+        members += 1;
+        emit UserJoined(name, members);
+    }
+
+    on Leave(name: String) {
+        members -= 1;
+        emit UserLeft(name, members);
+    }
+
+    on SendMessage(sender: String, text: String) {
+        message_count += 1;
+        emit NewMessage(sender, text, message_count);
+    }
+
+    on GetStats() {
+        reply members;
+    }
+
+    fn broadcast(msg: String) {
+        println!(msg);
+    }
+}
+
+actor Moderator {
+    state warnings: i32 = 0
+
+    #[intent(filter inappropriate content)]
+    on Review(sender: String, text: String) {
+        let is_ok = true;
+        if is_ok {
+            emit Approved(sender, text);
+        } else {
+            warnings += 1;
+            emit Rejected(sender, warnings);
+        }
+    }
+}
+
+fn main() with IO {
+    println!("Chat system compiled successfully!");
+    println!("ChatRoom actor handles: Join, Leave, SendMessage, GetStats");
+    println!("Moderator actor handles: Review with intent annotations");
+}`,
+
+  contract: `// Token Contract — ERC20-style token with minting and transfers
+// Demonstrates smart contract patterns with ownership and effects
+
+contract Token {
+    state name: String
+    state symbol: String
+    state total_supply: u256 = 0
+    state owner: Address
+
+    init() {
+        owner = caller;
+        name = "CBangCoin";
+        symbol = "CBC";
+    }
+
+    #[intent(create new tokens, only callable by owner)]
+    pub fn mint(to: Address, amount: u256) {
+        total_supply += amount;
+        emit Transfer(to, amount);
+    }
+
+    #[intent(transfer tokens between accounts safely)]
+    pub fn transfer(to: Address, amount: u256) {
+        emit Transfer(to, amount);
+    }
+
+    pub fn get_supply() {
+        reply total_supply;
+    }
+}
+
+contract NFTMarketplace {
+    state listing_count: u256 = 0
+    state fee_percent: u256 = 2
+
+    #[intent(list an NFT for sale at a given price)]
+    pub fn list_item(token_id: u256, price: u256) {
+        listing_count += 1;
+        emit ItemListed(token_id, price, listing_count);
+    }
+
+    #[intent(purchase a listed NFT, transferring ownership)]
+    pub fn buy_item(listing_id: u256) {
+        emit ItemSold(listing_id, caller);
+    }
+
+    pub pure fn calculate_fee(price: u256) -> u256 {
+        return price * 2 / 100;
+    }
+}
+
+fn main() with IO {
+    println!("Token contract: CBangCoin (CBC)");
+    println!("NFT Marketplace with 2% fee");
+    println!("Contracts compiled to JavaScript classes!");
+}`,
+
+  spinning: `// 3D Spinning Cube — rendered with ASCII art
+// Demonstrates math, loops, and string building
+
+fn sin_approx(x: f64) -> f64 {
+    let x2 = x * x;
+    return x - x * x2 / 6.0 + x * x2 * x2 / 120.0;
+}
+
+fn cos_approx(x: f64) -> f64 {
+    let x2 = x * x;
+    return 1.0 - x2 / 2.0 + x2 * x2 / 24.0;
+}
+
+fn render_frame(angle: f64) {
+    let cos_a = cos_approx(angle);
+    let sin_a = sin_approx(angle);
+    let cos_b = cos_approx(angle * 0.7);
+    let sin_b = sin_approx(angle * 0.7);
+
+    let mut frame = "";
+    let mut y = 0;
+    while y < 20 {
+        let mut x = 0;
+        let mut line = "";
+        while x < 40 {
+            let px = (x - 20) * 1.0 / 10.0;
+            let py = (y - 10) * 1.0 / 5.0;
+
+            let rx = px * cos_a - py * sin_a;
+            let ry = px * sin_a + py * cos_a;
+            let rz = rx * sin_b;
+            let rx2 = rx * cos_b;
+
+            if rx2 > 0.0 - 1.0 {
+                if rx2 < 1.0 {
+                    if ry > 0.0 - 1.0 {
+                        if ry < 1.0 {
+                            if rz > 0.0 - 0.5 {
+                                line = line + "#";
+                            } else {
+                                line = line + ".";
+                            }
+                        } else {
+                            line = line + " ";
+                        }
+                    } else {
+                        line = line + " ";
+                    }
+                } else {
+                    line = line + " ";
+                }
+            } else {
+                line = line + " ";
+            }
+            x += 1;
+        }
+        println!(line);
+        y += 1;
+    }
+}
+
+fn main() with IO {
+    println!("=== C! 3D Cube Renderer ===");
+    println!("");
+
+    let mut angle = 0.0;
+    while angle < 3.14 {
+        println!("--- Frame at angle {angle} ---");
+        render_frame(angle);
+        println!("");
+        angle += 1.57;
+    }
+
+    println!("=== Rendering complete! ===");
+}`,
 };
 
 function getEditorValue() {
