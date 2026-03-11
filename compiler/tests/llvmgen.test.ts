@@ -74,4 +74,23 @@ describe('LlvmGenerator', () => {
       expect(ir).toContain('switch i64');
     });
   });
+
+  describe('structs and enums', () => {
+    it('generates LLVM struct type', () => {
+      const ir = generateLlvm(`type Point { x: i64, y: i64 } fn main() { let p = Point { x: 10, y: 20 }; }`);
+      expect(ir).toContain('%Point = type');
+    });
+
+    it('generates enum as constants', () => {
+      const ir = generateLlvm(`enum Color { Red, Green, Blue } fn main() { let c = Red; }`);
+      expect(ir).toContain('store i64 0'); // Red = tag 0
+    });
+  });
+
+  describe('closures', () => {
+    it('generates closure as separate function', () => {
+      const ir = generateLlvm(`fn main() { let double = |x: i64| -> i64 { return x * 2; }; }`);
+      expect(ir).toContain('define i64 @__closure');
+    });
+  });
 });
