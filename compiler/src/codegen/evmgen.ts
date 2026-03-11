@@ -58,6 +58,7 @@ export class EvmGenerator {
   private storageSlots: Map<string, number> = new Map();
   private nextSlot = 0;
   private functionSelectors: Map<string, string> = new Map();
+  private currentParams: Map<string, number> = new Map();
   private labelCounter = 0;
 
   generate(program: Program): { bytecode: string; abi: any[] } {
@@ -298,6 +299,13 @@ export class EvmGenerator {
     // JUMPDEST marks the start of a function
     this.emit(EVM.JUMPDEST);
 
+    // Register function parameters for CALLDATALOAD
+    this.currentParams.clear();
+    for (let i = 0; i < fn.params.length; i++) {
+      // Each param is 32 bytes in calldata, starting at offset 4 (after selector)
+      this.currentParams.set(fn.params[i].name, 4 + i * 32);
+    }
+
     // Emit function body statements
     for (const stmt of fn.body.statements) {
       this.emitStmt(stmt);
@@ -492,10 +500,17 @@ export class EvmGenerator {
           this.emit(slot.toString(16).padStart(2, '0'));
           this.emit(EVM.SLOAD);
         } else {
-          // Local variable — push 0 as placeholder for MVP
-          this.emit(EVM.PUSH1);
-          this.emit('00');
-          this.emit(EVM.CALLDATALOAD);
+          // Function parameter — load from calldata
+          const paramOffset = this.currentParams.get(expr.name);
+          if (paramOffset !== undefined) {
+            this.emit(EVM.PUSH1);
+            this.emit(paramOffset.toString(16).padStart(2, '0'));
+            this.emit(EVM.CALLDATALOAD);
+          } else {
+            // Unknown local — push 0 as placeholder for MVP
+            this.emit(EVM.PUSH1);
+            this.emit('00');
+          }
         }
         break;
       }

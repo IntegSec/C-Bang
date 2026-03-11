@@ -39,4 +39,75 @@ describe('EvmGenerator', () => {
   it('errors on non-contract code', () => {
     expect(() => generateEvm(`fn main() { println("hello"); }`)).toThrow();
   });
+
+  it('generates SLOAD for state reads', () => {
+    const result = generateEvm(`
+      contract Token {
+        state supply: u256 = 0;
+        pub fn getSupply() -> u256 {
+          return supply;
+        }
+      }
+    `);
+    expect(result.bytecode).toContain('54'); // SLOAD opcode
+  });
+
+  it('generates SSTORE for state writes', () => {
+    const result = generateEvm(`
+      contract Token {
+        state supply: u256 = 0;
+        pub fn setSupply(val: u256) {
+          supply = val;
+        }
+      }
+    `);
+    expect(result.bytecode).toContain('55'); // SSTORE opcode
+  });
+
+  it('generates function dispatcher with CALLDATALOAD', () => {
+    const result = generateEvm(`
+      contract Token {
+        state supply: u256 = 0;
+        pub fn getSupply() -> u256 {
+          return supply;
+        }
+        pub fn setSupply(val: u256) {
+          supply = val;
+        }
+      }
+    `);
+    expect(result.bytecode).toContain('35'); // CALLDATALOAD
+    expect(result.bytecode).toContain('14'); // EQ for selector comparison
+    expect(result.bytecode).toContain('57'); // JUMPI
+  });
+
+  it('generates ABI with correct mutability', () => {
+    const result = generateEvm(`
+      contract Token {
+        state supply: u256 = 0;
+        pub fn getSupply() -> u256 {
+          return supply;
+        }
+        pub fn setSupply(val: u256) {
+          supply = val;
+        }
+      }
+    `);
+    const getter = result.abi.find((e: any) => e.name === 'getSupply');
+    const setter = result.abi.find((e: any) => e.name === 'setSupply');
+    expect(getter.stateMutability).toBe('view');
+    expect(setter.stateMutability).toBe('nonpayable');
+  });
+
+  it('generates arithmetic opcodes', () => {
+    const result = generateEvm(`
+      contract Math {
+        state value: u256 = 0;
+        pub fn add(a: u256, b: u256) -> u256 {
+          return a + b;
+        }
+      }
+    `);
+    expect(result.bytecode).toContain('01'); // ADD
+  });
 });
