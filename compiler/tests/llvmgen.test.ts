@@ -93,4 +93,29 @@ describe('LlvmGenerator', () => {
       expect(ir).toContain('define i64 @__closure');
     });
   });
+
+  describe('actors', () => {
+    it('generates actor as struct with methods', () => {
+      const ir = generateLlvm(`
+        actor Counter {
+          state count: i64 = 0;
+          on Increment() { count = count + 1; }
+        }
+        fn main() {}
+      `);
+      expect(ir).toContain('%Counter = type');
+    });
+  });
+
+  describe('floats and remaining', () => {
+    it('generates f64 operations', () => {
+      const ir = generateLlvm(`fn main() { let x: f64 = 3.14; let y: f64 = x * 2.0; }`);
+      expect(ir).toContain('double');
+    });
+
+    it('generates function calls', () => {
+      const ir = generateLlvm(`fn add(a: i64, b: i64) -> i64 { return a + b; } fn main() { let r: i64 = add(1, 2); }`);
+      expect(ir).toContain('call i64 @add');
+    });
+  });
 });
