@@ -473,6 +473,20 @@ describe('WasmGenerator', () => {
     });
   });
 
+  // ─── Closures ──────────────────────────────────────────────────
+
+  describe('closures', () => {
+    it('compiles simple closure', async () => {
+      const wasm = generateWasm(`
+        fn main() {
+          let double = |x: i64| -> i64 { return x * 2; };
+        }
+      `);
+      const module = await WebAssembly.compile(wasm);
+      expect(module).toBeDefined();
+    });
+  });
+
   // ─── Edge cases ─────────────────────────────────────────────────
 
   describe('edge cases', () => {

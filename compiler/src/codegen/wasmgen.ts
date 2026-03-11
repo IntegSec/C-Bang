@@ -24,6 +24,7 @@ import type {
   Block,
   Stmt,
   Expr,
+  ClosureExpr,
 } from '../ast/index.js';
 
 // ─── WASM binary encoding helpers ─────────────────────────────────
@@ -238,6 +239,11 @@ export class WasmGenerator {
   // Enum variant registry: variant name → { tag, enumName, fieldCount }
   private enumVariants = new Map<string, { tag: number; enumName: string; fieldCount: number }>();
 
+  // Closure counter for generating unique names
+  private closureCounter = 0;
+  // Deferred closures to compile after current function
+  private deferredClosures: { name: string; expr: ClosureExpr }[] = [];
+
   // Current function state
   private locals: WasmLocal[] = [];
   private localMap = new Map<string, number>();
@@ -259,6 +265,8 @@ export class WasmGenerator {
     this.importCount = 0;
     this.structLayouts.clear();
     this.enumVariants.clear();
+    this.closureCounter = 0;
+    this.deferredClosures = [];
     this.heapBase = 0;
 
     // Register WASI fd_write import: (i32, i32, i32, i32) -> i32
@@ -365,6 +373,9 @@ export class WasmGenerator {
 
     func.localTypes = this.locals.slice(decl.params.length).map(l => l.type);
     func.body = [...this.currentBody, OP.end];
+
+    // Compile any closures that were deferred during this function
+    this.compileDeferredClosures();
   }
 
   // ─── Statement emission ─────────────────────────────────────────
@@ -658,6 +669,9 @@ export class WasmGenerator {
         break;
       case 'FieldAccess':
         this.emitFieldAccess(expr);
+        break;
+      case 'Closure':
+        this.emitClosure(expr as ClosureExpr);
         break;
       default:
         // Unsupported expression — emit 0
@@ -955,6 +969,87 @@ export class WasmGenerator {
 
     this.currentBody.push(OP.call, ...encodeU32(0));       // call fd_write (import #0)
     this.currentBody.push(OP.drop);                         // drop errno result
+  }
+
+  // ─── Closure emission ──────────────────────────────────────────
+
+  private emitClosure(expr: ClosureExpr): void {
+    // Generate a unique name for this closure
+    const closureName = `__closure_${this.closureCounter++}`;
+
+    // Determine param types and return type
+    const paramTypes = expr.params.map(p => resolveWasmType(p.typeAnnotation));
+    const returnTypes = expr.returnType ? [resolveWasmType(expr.returnType)] : [];
+    const typeIndex = this.getOrCreateType(paramTypes, returnTypes);
+
+    // Register the closure as a function
+    const funcIndex = this.importCount + this.functions.length;
+    this.funcNames.set(closureName, funcIndex);
+
+    this.functions.push({
+      name: closureName,
+      typeIndex,
+      localTypes: [],
+      body: [],
+      exported: false,
+    });
+
+    // Defer compilation of the closure body (we'll compile it after the current function)
+    this.deferredClosures.push({ name: closureName, expr });
+
+    // The closure value is the function index stored as i64
+    this.currentBody.push(OP.i64_const, ...encodeI64(funcIndex));
+  }
+
+  private compileDeferredClosures(): void {
+    while (this.deferredClosures.length > 0) {
+      const deferred = this.deferredClosures.shift()!;
+      const closureExpr = deferred.expr;
+      const funcIndex = this.funcNames.get(deferred.name)!;
+      const func = this.functions[funcIndex - this.importCount]!;
+
+      // Save current function state
+      const savedLocals = this.locals;
+      const savedLocalMap = this.localMap;
+      const savedBody = this.currentBody;
+      const savedNextLocal = this.nextLocalIndex;
+      const savedStructTypes = this.localStructTypes;
+
+      // Set up fresh state for the closure function
+      this.locals = [];
+      this.localMap = new Map();
+      this.localStructTypes = new Map();
+      this.currentBody = [];
+      this.nextLocalIndex = 0;
+
+      // Register parameters as locals
+      for (const param of closureExpr.params) {
+        this.addLocal(param.name, resolveWasmType(param.typeAnnotation));
+      }
+
+      // Emit body
+      if ('statements' in closureExpr.body && Array.isArray((closureExpr.body as any).statements)) {
+        this.emitBlock(closureExpr.body as Block);
+      } else {
+        // Expression body — emit as a return value
+        this.emitExpr(closureExpr.body as Expr);
+        if (closureExpr.returnType) {
+          this.currentBody.push(OP.return);
+        } else {
+          this.currentBody.push(OP.drop);
+        }
+      }
+
+      func.localTypes = this.locals.slice(closureExpr.params.length).map(l => l.type);
+      func.body = [...this.currentBody, OP.end];
+
+      // Restore parent function state
+      this.locals = savedLocals;
+      this.localMap = savedLocalMap;
+      this.currentBody = savedBody;
+      this.nextLocalIndex = savedNextLocal;
+      this.localStructTypes = savedStructTypes;
+    }
   }
 
   // ─── Helpers ────────────────────────────────────────────────────
