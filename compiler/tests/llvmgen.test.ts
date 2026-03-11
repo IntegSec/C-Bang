@@ -56,4 +56,22 @@ describe('LlvmGenerator', () => {
       expect(ir).toContain('store i64 42');
     });
   });
+
+  describe('control flow', () => {
+    it('generates if/else with basic blocks', () => {
+      const ir = generateLlvm(`fn main() { if true { println("yes"); } else { println("no"); } }`);
+      expect(ir).toContain('br i1');
+    });
+
+    it('generates while loop', () => {
+      const ir = generateLlvm(`fn main() { let mut i: i64 = 0; while i < 10 { i = i + 1; } }`);
+      expect(ir).toContain('br label');
+      expect(ir).toContain('icmp slt');
+    });
+
+    it('generates match as switch', () => {
+      const ir = generateLlvm(`fn check(x: i64) { match x { 1 => println("one"), _ => println("other"), } }`);
+      expect(ir).toContain('switch i64');
+    });
+  });
 });
