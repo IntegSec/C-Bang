@@ -341,6 +341,9 @@ export class WasmGenerator {
       case 'AssignStmt':
         this.emitAssignStmt(stmt);
         break;
+      case 'MatchStmt':
+        this.emitMatchStmt(stmt);
+        break;
       default:
         break;
     }
@@ -406,6 +409,90 @@ export class WasmGenerator {
         }
       }
       this.currentBody.push(OP.local_set, ...encodeU32(idx));
+    }
+  }
+
+  private emitMatchStmt(stmt: import('../ast/index.js').MatchStmt): void {
+    // Evaluate subject into a temporary local
+    const subjectType = this.inferExprType(stmt.subject);
+    const tmpIdx = this.addLocal('__match_subject', subjectType);
+    this.emitExpr(stmt.subject);
+    this.currentBody.push(OP.local_set, ...encodeU32(tmpIdx));
+
+    this.emitMatchArms(stmt.arms, 0, tmpIdx, subjectType);
+  }
+
+  private emitMatchArms(
+    arms: import('../ast/index.js').MatchArm[],
+    index: number,
+    subjectIdx: number,
+    subjectType: number,
+  ): void {
+    if (index >= arms.length) return;
+
+    const arm = arms[index]!;
+    const pattern = arm.pattern;
+
+    if (pattern.kind === 'WildcardPattern') {
+      // Catch-all — just emit the body
+      this.emitMatchArmBody(arm.body);
+    } else if (pattern.kind === 'LiteralPattern') {
+      // Compare subject to literal
+      this.currentBody.push(OP.local_get, ...encodeU32(subjectIdx));
+
+      if (typeof pattern.value === 'boolean') {
+        this.currentBody.push(OP.i64_const, ...encodeI64(pattern.value ? 1 : 0));
+      } else if (typeof pattern.value === 'number') {
+        if (subjectType === WASM_F64) {
+          // Remove the i64 local_get we just pushed — need f64 compare
+          // Actually we need to re-think: subject is stored as subjectType
+          this.currentBody.push(OP.f64_const, ...encodeF64(pattern.value));
+          // f64_eq produces i32 directly
+        } else {
+          this.currentBody.push(OP.i64_const, ...encodeI64(pattern.value));
+        }
+      } else {
+        // String pattern — not yet supported, push 0
+        this.currentBody.push(OP.i64_const, ...encodeI64(0));
+      }
+
+      // Compare: i64_eq or f64_eq produces i32
+      if (subjectType === WASM_F64) {
+        this.currentBody.push(OP.f64_eq);
+      } else {
+        this.currentBody.push(OP.i64_eq);
+      }
+      // Result is i32, use directly with OP.if
+      this.currentBody.push(OP.if, 0x40); // void block type
+      this.emitMatchArmBody(arm.body);
+
+      if (index + 1 < arms.length) {
+        this.currentBody.push(OP.else);
+        this.emitMatchArms(arms, index + 1, subjectIdx, subjectType);
+      }
+      this.currentBody.push(OP.end);
+    } else if (pattern.kind === 'IdentPattern') {
+      // Bind subject value to a new local
+      const bindIdx = this.addLocal(pattern.name, subjectType);
+      this.currentBody.push(OP.local_get, ...encodeU32(subjectIdx));
+      this.currentBody.push(OP.local_set, ...encodeU32(bindIdx));
+      this.emitMatchArmBody(arm.body);
+    } else if (pattern.kind === 'ConstructorPattern') {
+      // For now, compare tag value (placeholder — will be expanded for enums)
+      // Just emit the body as a fallthrough for now
+      this.emitMatchArmBody(arm.body);
+    }
+  }
+
+  private emitMatchArmBody(body: import('../ast/index.js').Expr | import('../ast/index.js').Block): void {
+    if ('statements' in body && Array.isArray((body as any).statements)) {
+      this.emitBlock(body as Block);
+    } else {
+      // Expression body — emit as an ExprStmt
+      this.emitExpr(body as Expr);
+      if (this.exprProducesValue(body as Expr)) {
+        this.currentBody.push(OP.drop);
+      }
     }
   }
 

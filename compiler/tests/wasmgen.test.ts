@@ -326,6 +326,63 @@ describe('WasmGenerator', () => {
     });
   });
 
+  // ─── Match expressions ─────────────────────────────────────────
+
+  describe('match expressions', () => {
+    it('compiles match on integers', async () => {
+      const wasm = generateWasm(`
+        fn check(x: i64) {
+          match x {
+            1 => println("one"),
+            2 => println("two"),
+            _ => println("other"),
+          }
+        }
+        fn main() {
+          check(1);
+          check(2);
+          check(3);
+        }
+      `);
+      const output = await runWasm(wasm);
+      expect(output).toBe('one\ntwo\nother\n');
+    });
+
+    it('compiles match on booleans', async () => {
+      const wasm = generateWasm(`
+        fn describe(b: bool) {
+          match b {
+            true => println("yes"),
+            false => println("no"),
+          }
+        }
+        fn main() {
+          describe(true);
+          describe(false);
+        }
+      `);
+      const output = await runWasm(wasm);
+      expect(output).toBe('yes\nno\n');
+    });
+
+    it('compiles match with wildcard', async () => {
+      const wasm = generateWasm(`
+        fn check(x: i64) {
+          match x {
+            1 => println("one"),
+            _ => println("default"),
+          }
+        }
+        fn main() {
+          check(1);
+          check(99);
+        }
+      `);
+      const output = await runWasm(wasm);
+      expect(output).toBe('one\ndefault\n');
+    });
+  });
+
   // ─── Edge cases ─────────────────────────────────────────────────
 
   describe('edge cases', () => {
