@@ -398,6 +398,39 @@ describe('WasmGenerator', () => {
     });
   });
 
+  // ─── Structs ───────────────────────────────────────────────────
+
+  describe('structs', () => {
+    it('compiles struct creation', async () => {
+      const wasm = generateWasm(`
+        type Point {
+          x: i64,
+          y: i64,
+        }
+        fn main() {
+          let p = Point { x: 10, y: 20 };
+        }
+      `);
+      const module = await WebAssembly.compile(wasm);
+      expect(module).toBeDefined();
+    });
+
+    it('compiles struct field access', async () => {
+      const wasm = generateWasm(`
+        type Point {
+          x: i64,
+          y: i64,
+        }
+        fn main() {
+          let p = Point { x: 10, y: 20 };
+          let sum: i64 = p.x + p.y;
+        }
+      `);
+      const module = await WebAssembly.compile(wasm);
+      expect(module).toBeDefined();
+    });
+  });
+
   // ─── Edge cases ─────────────────────────────────────────────────
 
   describe('edge cases', () => {

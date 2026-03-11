@@ -20,6 +20,7 @@ import type {
   Program,
   TopLevelItem,
   FunctionDecl,
+  TypeDecl,
   Block,
   Stmt,
   Expr,
@@ -209,6 +210,11 @@ interface StringLiteral {
   value: string;
 }
 
+interface StructLayout {
+  fields: { name: string; offset: number; type: number }[];
+  size: number;
+}
+
 export class WasmGenerator {
   // Function registry
   private functions: WasmFunc[] = [];
@@ -223,11 +229,20 @@ export class WasmGenerator {
   private strings: StringLiteral[] = [];
   private dataOffset = 1024; // Start string data at offset 1024
 
+  // Struct layouts
+  private structLayouts = new Map<string, StructLayout>();
+
+  // Heap pointer — bump allocator starts after string data
+  private heapBase = 0; // Set after all strings are allocated
+
   // Current function state
   private locals: WasmLocal[] = [];
   private localMap = new Map<string, number>();
   private currentBody: number[] = [];
   private nextLocalIndex = 0;
+
+  // Track which locals hold struct pointers (variable name → struct type name)
+  private localStructTypes = new Map<string, string>();
 
   // ─── Main entry point ───────────────────────────────────────────
 
@@ -239,11 +254,20 @@ export class WasmGenerator {
     this.strings = [];
     this.dataOffset = 1024;
     this.importCount = 0;
+    this.structLayouts.clear();
+    this.heapBase = 0;
 
     // Register WASI fd_write import: (i32, i32, i32, i32) -> i32
     const fdWriteType = this.getOrCreateType([WASM_I32, WASM_I32, WASM_I32, WASM_I32], [WASM_I32]);
     this.importCount = 1;
     this.funcNames.set('__fd_write', 0);
+
+    // First pass — register type declarations (structs)
+    for (const item of program.items) {
+      if (item.kind === 'TypeDecl') {
+        this.registerTypeDecl(item);
+      }
+    }
 
     // Register user functions (first pass — signatures only)
     for (const item of program.items) {
@@ -282,12 +306,29 @@ export class WasmGenerator {
     });
   }
 
+  private registerTypeDecl(decl: TypeDecl): void {
+    if (decl.body.kind === 'Struct') {
+      const fields: { name: string; offset: number; type: number }[] = [];
+      let offset = 0;
+      for (const field of decl.body.fields) {
+        fields.push({
+          name: field.name,
+          offset,
+          type: resolveWasmType(field.typeAnnotation),
+        });
+        offset += 8; // Each field is 8 bytes (i64-sized)
+      }
+      this.structLayouts.set(decl.name, { fields, size: offset });
+    }
+  }
+
   private generateFunction(decl: FunctionDecl): void {
     const funcIndex = this.funcNames.get(decl.name)!;
     const func = this.functions[funcIndex - this.importCount]!;
 
     this.locals = [];
     this.localMap.clear();
+    this.localStructTypes.clear();
     this.currentBody = [];
     this.nextLocalIndex = 0;
 
@@ -352,6 +393,12 @@ export class WasmGenerator {
   private emitLetStmt(stmt: import('../ast/index.js').LetStmt): void {
     const wasmType = resolveWasmType(stmt.typeAnnotation);
     const localIdx = this.addLocal(stmt.name, wasmType);
+
+    // Track struct type for field access resolution
+    if (stmt.initializer.kind === 'Struct') {
+      this.localStructTypes.set(stmt.name, stmt.initializer.name);
+    }
+
     this.emitExpr(stmt.initializer);
     this.currentBody.push(OP.local_set, ...encodeU32(localIdx));
   }
@@ -539,6 +586,12 @@ export class WasmGenerator {
         this.emitStringLiteral(combined);
         break;
       }
+      case 'Struct':
+        this.emitStructExpr(expr);
+        break;
+      case 'FieldAccess':
+        this.emitFieldAccess(expr);
+        break;
       default:
         // Unsupported expression — emit 0
         this.currentBody.push(OP.i64_const, ...encodeI64(0));
@@ -682,6 +735,74 @@ export class WasmGenerator {
     } else {
       // Unknown macro — nop
     }
+  }
+
+  private emitStructExpr(expr: import('../ast/index.js').StructExpr): void {
+    const layout = this.structLayouts.get(expr.name);
+    if (!layout) {
+      // Unknown struct — push 0
+      this.currentBody.push(OP.i64_const, ...encodeI64(0));
+      return;
+    }
+
+    // Bump-allocate: read heap pointer from global 0, advance by struct size
+    // heap pointer = global 0
+    this.currentBody.push(OP.global_get, ...encodeU32(0)); // get heap pointer (i32)
+
+    // Save the pointer into a temp local for storing fields
+    const tmpIdx = this.addLocal('__struct_ptr', WASM_I32);
+    this.currentBody.push(OP.local_tee, ...encodeU32(tmpIdx));
+
+    // Advance heap pointer
+    this.currentBody.push(OP.i32_const, ...encodeI32(layout.size));
+    this.currentBody.push(OP.i32_add);
+    this.currentBody.push(OP.global_set, ...encodeU32(0)); // store new heap pointer
+
+    // Store each field
+    for (const fieldExpr of expr.fields) {
+      const fieldLayout = layout.fields.find(f => f.name === fieldExpr.name);
+      if (!fieldLayout) continue;
+
+      // Address = ptr + field offset
+      this.currentBody.push(OP.local_get, ...encodeU32(tmpIdx));
+      // Emit field value
+      this.emitExpr(fieldExpr.value);
+      // Store as i64
+      this.currentBody.push(OP.i64_store, 0x03, ...encodeU32(fieldLayout.offset)); // align=8
+    }
+
+    // Return pointer as i64
+    this.currentBody.push(OP.local_get, ...encodeU32(tmpIdx));
+    this.currentBody.push(OP.i64_extend_i32_s);
+  }
+
+  private emitFieldAccess(expr: import('../ast/index.js').FieldAccessExpr): void {
+    // Emit the object expression (should be a struct pointer as i64)
+    this.emitExpr(expr.object);
+    // Wrap to i32 for memory access
+    this.currentBody.push(OP.i32_wrap_i64);
+
+    // Look up the struct layout from the object type
+    const structName = this.inferStructName(expr.object);
+    const layout = structName ? this.structLayouts.get(structName) : null;
+    const fieldLayout = layout?.fields.find(f => f.name === expr.field);
+    const offset = fieldLayout?.offset ?? 0;
+
+    // Load field value as i64
+    this.currentBody.push(OP.i64_load, 0x03, ...encodeU32(offset)); // align=8
+  }
+
+  /** Try to infer the struct type name from an expression. */
+  private inferStructName(expr: Expr): string | null {
+    if (expr.kind === 'Struct') {
+      return expr.name;
+    }
+    if (expr.kind === 'Ident') {
+      // Look up in local variable types — we track struct types by name
+      const structType = this.localStructTypes.get(expr.name);
+      if (structType) return structType;
+    }
+    return null;
   }
 
   private emitPrintln(args: Expr[], newline: boolean): void {
@@ -899,12 +1020,28 @@ export class WasmGenerator {
     ));
 
     // Memory section: 1 page minimum
-    const pages = Math.max(1, Math.ceil(this.dataOffset / 65536));
+    // Align heap base to 8 bytes after string data
+    this.heapBase = (this.dataOffset + 7) & ~7;
+    const pages = Math.max(1, Math.ceil((this.heapBase + 65536) / 65536));
     sections.push(...section(SECTION.memory, [
       ...encodeU32(1), // 1 memory
       0x00, // no max
       ...encodeU32(pages),
     ]));
+
+    // Global section: heap pointer (mutable i32)
+    if (this.structLayouts.size > 0) {
+      const globals = [
+        [
+          WASM_I32,       // type: i32
+          0x01,           // mutable
+          OP.i32_const, ...encodeI32(this.heapBase), OP.end,  // init expr
+        ],
+      ];
+      sections.push(...section(SECTION.global,
+        encodeVector(globals),
+      ));
+    }
 
     // Export section
     const exports: number[][] = [];
