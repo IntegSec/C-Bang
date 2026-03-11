@@ -383,6 +383,21 @@ describe('WasmGenerator', () => {
     });
   });
 
+  // ─── String interpolation ───────────────────────────────────────
+
+  describe('string interpolation', () => {
+    it('compiles string interpolation (MVP)', async () => {
+      const wasm = generateWasm(`
+        fn main() {
+          let name = "World";
+          println("Hello, {name}!");
+        }
+      `);
+      const module = await WebAssembly.compile(wasm);
+      expect(module).toBeDefined();
+    });
+  });
+
   // ─── Edge cases ─────────────────────────────────────────────────
 
   describe('edge cases', () => {

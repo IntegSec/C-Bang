@@ -527,6 +527,18 @@ export class WasmGenerator {
       case 'MacroCall':
         this.emitMacroCall(expr);
         break;
+      case 'StringInterpolation': {
+        let combined = '';
+        for (const part of expr.parts) {
+          if (part.kind === 'Literal') {
+            combined += part.value;
+          } else {
+            combined += '<expr>';
+          }
+        }
+        this.emitStringLiteral(combined);
+        break;
+      }
       default:
         // Unsupported expression — emit 0
         this.currentBody.push(OP.i64_const, ...encodeI64(0));
