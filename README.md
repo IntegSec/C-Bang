@@ -128,9 +128,27 @@ C! compiles to **five targets** from a single codebase — from web apps to smar
 |--------|---------|--------|----------|
 | JavaScript | `cbang build hello.cb` | `.js` | Web apps, Node.js |
 | WebAssembly | `cbang build --target wasm hello.cb` | `.wasm` | Near-native performance |
-| LLVM IR | `cbang build --target llvm hello.cb` | `.ll` | Native binaries |
+| LLVM IR | `cbang build --target llvm hello.cb` | `.ll` | Native binaries (Linux, macOS, Windows) |
 | EVM | `cbang build --target evm contract.cb` | `.hex` + `.abi.json` | Ethereum smart contracts |
 | NEAR | `cbang build --target near contract.cb` | `.near.wasm` | NEAR Protocol contracts |
+
+### Native Binaries via LLVM
+
+The LLVM target produces `.ll` files that you can compile to native binaries on any platform. Requires [LLVM](https://llvm.org/) installed (`apt install llvm clang` on Linux, `brew install llvm` on macOS, or download from llvm.org for Windows).
+
+```bash
+# Step 1: Compile C! to LLVM IR
+cbang build --target llvm hello.cb    # produces hello.ll
+
+# Step 2: Compile to native binary
+# Linux / macOS
+llc hello.ll -o hello.o -filetype=obj && clang hello.o -o hello
+# Windows
+llc hello.ll -o hello.obj -filetype=obj && clang hello.obj -o hello.exe
+
+# Or run directly with the LLVM interpreter
+lli hello.ll
+```
 
 ## Project Status
 

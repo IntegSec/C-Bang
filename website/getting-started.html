@@ -111,6 +111,7 @@
                                 <li><a href="#intents">Intent Annotations</a></li>
                                 <li><a href="#building">Building &amp; Running</a></li>
                                 <li><a href="#compile-targets">Compile Targets</a></li>
+                                <li><a href="#native-binaries">Native Binaries (LLVM)</a></li>
                                 <li><a href="#next-steps">Next Steps</a></li>
                             </ul>
                         </nav>
@@ -441,6 +442,72 @@
 
                         <div class="info-box tip">
                             <p><strong>Same code, multiple targets.</strong> Your C! source compiles to any target without changes. Shared types across frontend, backend, and smart contracts mean zero schema drift.</p>
+                        </div>
+
+                        <!-- Compile to Native Binaries -->
+                        <h3 id="native-binaries">Compile to Native Binaries via LLVM</h3>
+                        <p>The LLVM target produces <code>.ll</code> files (LLVM IR) that you can compile to native binaries for any platform. This gives you maximum performance for servers, CLI tools, and system utilities.</p>
+
+                        <h4>Prerequisites</h4>
+                        <p>Install LLVM and Clang on your system:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">terminal</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm"># Linux (Debian/Ubuntu)</span>
+<span class="fn">sudo apt install</span> llvm clang
+
+<span class="cm"># macOS</span>
+<span class="fn">brew install</span> llvm
+
+<span class="cm"># Windows — download from https://llvm.org/builds/</span></pre>
+                            </div>
+                        </div>
+
+                        <h4>Step-by-Step: C! Source to Native Binary</h4>
+                        <p>Start with a simple program:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">hello.cb</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="ann">#[intent("Application entry point")]</span>
+<span class="kw">fn</span> <span class="fn">main</span><span class="par">()</span> <span class="par">{</span>
+    <span class="fn">println</span><span class="par">(</span><span class="str">"Hello from native C!"</span><span class="par">)</span>
+<span class="par">}</span></pre>
+                            </div>
+                        </div>
+
+                        <p>Compile to LLVM IR, then to a native binary:</p>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <div class="code-dots"><span></span><span></span><span></span></div>
+                                <span class="code-filename">terminal</span>
+                            </div>
+                            <div class="code-body">
+<pre><span class="cm"># Step 1: Compile C! to LLVM IR</span>
+<span class="fn">cbang</span> build <span class="str">--target llvm</span> hello.cb    <span class="cm"># produces hello.ll</span>
+
+<span class="cm"># Step 2: Compile to native binary</span>
+<span class="cm"># Linux / macOS</span>
+<span class="fn">llc</span> hello.ll -o hello.o -filetype=obj && <span class="fn">clang</span> hello.o -o hello
+
+<span class="cm"># Windows</span>
+<span class="fn">llc</span> hello.ll -o hello.obj -filetype=obj && <span class="fn">clang</span> hello.obj -o hello.exe
+
+<span class="cm"># Step 3: Run the native binary</span>
+./hello    <span class="cm"># Hello from native C!</span></pre>
+                            </div>
+                        </div>
+
+                        <div class="info-box tip">
+                            <p><strong>Quick test with the LLVM interpreter.</strong> You can skip the compile step and run LLVM IR directly: <code>lli hello.ll</code></p>
                         </div>
 
                         <!-- Next Steps -->
