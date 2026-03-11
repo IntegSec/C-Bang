@@ -10,6 +10,9 @@
  *   cbang run <file.cb>      Build and run
  *   cbang build <file.cb>    Compile to JS (default)
  *   cbang build --target wasm <file.cb>  Compile to WASM
+ *   cbang build --target llvm <file.cb>  Compile to LLVM IR
+ *   cbang build --target evm <file.cb>   Compile to EVM bytecode
+ *   cbang build --target near <file.cb>  Compile to NEAR WASM
  *   cbang verify <file.cb>   Run formal verification
  *   cbang --version           Show version
  *   cbang --help              Show help
@@ -78,7 +81,7 @@ function main(): void {
     case 'build': {
       if (!file) {
         console.error('Error: missing file argument');
-        console.error('Usage: cbang build [--target js|wasm] <file.cb>');
+        console.error('Usage: cbang build [--target js|wasm|llvm|evm|near] <file.cb>');
         process.exit(1);
       }
       const target = args.includes('--target')
@@ -425,16 +428,66 @@ async function runCommand(filePath: string): Promise<void> {
 }
 
 async function buildCommand(filePath: string, target: string = 'js'): Promise<void> {
-  if (target === 'wasm') {
-    const wasmBytes = await compileWasm(filePath);
-    const outFile = basename(filePath, '.cb') + '.wasm';
-    writeFileSync(outFile, wasmBytes);
-    console.log(`✓ Compiled to ${outFile} (${wasmBytes.length} bytes)`);
-  } else {
-    const jsCode = await compile(filePath);
-    const outFile = basename(filePath, '.cb') + '.js';
-    writeFileSync(outFile, jsCode, 'utf-8');
-    console.log(`✓ Compiled to ${outFile}`);
+  switch (target) {
+    case 'js': {
+      const jsCode = await compile(filePath);
+      const outFile = basename(filePath, '.cb') + '.js';
+      writeFileSync(outFile, jsCode, 'utf-8');
+      console.log(`✓ Compiled to ${outFile}`);
+      break;
+    }
+    case 'wasm': {
+      const wasmBytes = await compileWasm(filePath);
+      const outFile = basename(filePath, '.cb') + '.wasm';
+      writeFileSync(outFile, wasmBytes);
+      console.log(`✓ Compiled to ${outFile} (${wasmBytes.length} bytes)`);
+      break;
+    }
+    case 'llvm': {
+      const source = readSource(filePath);
+      const lexer = new Lexer(source, filePath);
+      const tokens = lexer.tokenize();
+      const parser = new Parser(tokens);
+      const { program } = parser.parse();
+      const { LlvmGenerator } = await import('./codegen/index.js');
+      const ir = new LlvmGenerator().generate(program);
+      const outFile = basename(filePath, '.cb') + '.ll';
+      writeFileSync(outFile, ir, 'utf-8');
+      console.log(`✓ Compiled to ${outFile}`);
+      console.log(`  Run with: lli ${outFile}`);
+      break;
+    }
+    case 'evm': {
+      const source = readSource(filePath);
+      const lexer = new Lexer(source, filePath);
+      const tokens = lexer.tokenize();
+      const parser = new Parser(tokens);
+      const { program } = parser.parse();
+      const { EvmGenerator } = await import('./codegen/index.js');
+      const result = new EvmGenerator().generate(program);
+      const base = basename(filePath, '.cb');
+      writeFileSync(base + '.hex', result.bytecode, 'utf-8');
+      writeFileSync(base + '.abi.json', JSON.stringify(result.abi, null, 2), 'utf-8');
+      console.log(`✓ Compiled to ${base}.hex + ${base}.abi.json`);
+      break;
+    }
+    case 'near': {
+      const source = readSource(filePath);
+      const lexer = new Lexer(source, filePath);
+      const tokens = lexer.tokenize();
+      const parser = new Parser(tokens);
+      const { program } = parser.parse();
+      const { NearGenerator } = await import('./codegen/index.js');
+      const wasm = new NearGenerator().generate(program);
+      const outFile = basename(filePath, '.cb') + '.near.wasm';
+      writeFileSync(outFile, wasm);
+      console.log(`✓ Compiled to ${outFile} (${wasm.length} bytes)`);
+      break;
+    }
+    default:
+      console.error(`Error: unknown target '${target}'`);
+      console.error('Valid targets: js, wasm, llvm, evm, near');
+      process.exit(1);
   }
 }
 
@@ -462,6 +515,9 @@ COMMANDS:
   run <file.cb>       Compile and execute
   build <file.cb>     Compile to target (default: JavaScript)
   build --target wasm <file.cb>  Compile to WebAssembly
+  build --target llvm <file.cb>  Compile to LLVM IR (.ll)
+  build --target evm <file.cb>   Compile to EVM bytecode
+  build --target near <file.cb>  Compile to NEAR WASM
   repl                Interactive REPL
   verify <file.cb>    Formal verification [not yet implemented]
   audit <file.cb>     Security audit     [not yet implemented]
