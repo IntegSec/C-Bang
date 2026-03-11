@@ -431,6 +431,48 @@ describe('WasmGenerator', () => {
     });
   });
 
+  // ─── Enums ─────────────────────────────────────────────────────
+
+  describe('enums', () => {
+    it('compiles enum with unit variants', async () => {
+      const wasm = generateWasm(`
+        enum Color {
+          Red,
+          Green,
+          Blue,
+        }
+        fn main() {
+          let c = Red;
+        }
+      `);
+      const module = await WebAssembly.compile(wasm);
+      expect(module).toBeDefined();
+    });
+
+    it('compiles match on unit enum variants', async () => {
+      const wasm = generateWasm(`
+        enum Color {
+          Red,
+          Green,
+          Blue,
+        }
+        fn describe(c: i64) {
+          match c {
+            0 => println("red"),
+            1 => println("green"),
+            2 => println("blue"),
+            _ => println("unknown"),
+          }
+        }
+        fn main() {
+          describe(0);
+        }
+      `);
+      const output = await runWasm(wasm);
+      expect(output).toBe('red\n');
+    });
+  });
+
   // ─── Edge cases ─────────────────────────────────────────────────
 
   describe('edge cases', () => {

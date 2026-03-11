@@ -235,6 +235,9 @@ export class WasmGenerator {
   // Heap pointer — bump allocator starts after string data
   private heapBase = 0; // Set after all strings are allocated
 
+  // Enum variant registry: variant name → { tag, enumName, fieldCount }
+  private enumVariants = new Map<string, { tag: number; enumName: string; fieldCount: number }>();
+
   // Current function state
   private locals: WasmLocal[] = [];
   private localMap = new Map<string, number>();
@@ -255,6 +258,7 @@ export class WasmGenerator {
     this.dataOffset = 1024;
     this.importCount = 0;
     this.structLayouts.clear();
+    this.enumVariants.clear();
     this.heapBase = 0;
 
     // Register WASI fd_write import: (i32, i32, i32, i32) -> i32
@@ -262,10 +266,12 @@ export class WasmGenerator {
     this.importCount = 1;
     this.funcNames.set('__fd_write', 0);
 
-    // First pass — register type declarations (structs)
+    // First pass — register type declarations (structs and enums)
     for (const item of program.items) {
       if (item.kind === 'TypeDecl') {
         this.registerTypeDecl(item);
+      } else if (item.kind === 'EnumDecl') {
+        this.registerEnumDecl(item);
       }
     }
 
@@ -319,6 +325,24 @@ export class WasmGenerator {
         offset += 8; // Each field is 8 bytes (i64-sized)
       }
       this.structLayouts.set(decl.name, { fields, size: offset });
+    }
+  }
+
+  private registerEnumDecl(decl: import('../ast/index.js').EnumDecl): void {
+    let tag = 0;
+    for (const variant of decl.variants) {
+      let fieldCount = 0;
+      if (variant.kind === 'TupleVariant') {
+        fieldCount = variant.fields.length;
+      } else if (variant.kind === 'StructVariant') {
+        fieldCount = variant.fields.length;
+      }
+      this.enumVariants.set(variant.name, {
+        tag,
+        enumName: decl.name,
+        fieldCount,
+      });
+      tag++;
     }
   }
 
@@ -525,9 +549,52 @@ export class WasmGenerator {
       this.currentBody.push(OP.local_set, ...encodeU32(bindIdx));
       this.emitMatchArmBody(arm.body);
     } else if (pattern.kind === 'ConstructorPattern') {
-      // For now, compare tag value (placeholder — will be expanded for enums)
-      // Just emit the body as a fallthrough for now
-      this.emitMatchArmBody(arm.body);
+      const variant = this.enumVariants.get(pattern.name);
+      if (variant) {
+        if (variant.fieldCount === 0) {
+          // Unit variant: subject is the tag value directly (i64)
+          this.currentBody.push(OP.local_get, ...encodeU32(subjectIdx));
+          this.currentBody.push(OP.i64_const, ...encodeI64(variant.tag));
+          this.currentBody.push(OP.i64_eq);
+          this.currentBody.push(OP.if, 0x40);
+          this.emitMatchArmBody(arm.body);
+          if (index + 1 < arms.length) {
+            this.currentBody.push(OP.else);
+            this.emitMatchArms(arms, index + 1, subjectIdx, subjectType);
+          }
+          this.currentBody.push(OP.end);
+        } else {
+          // Tuple variant: subject is a pointer, load tag from memory
+          this.currentBody.push(OP.local_get, ...encodeU32(subjectIdx));
+          this.currentBody.push(OP.i32_wrap_i64); // pointer as i32
+          this.currentBody.push(OP.i64_load, 0x03, ...encodeU32(0)); // load tag
+          this.currentBody.push(OP.i64_const, ...encodeI64(variant.tag));
+          this.currentBody.push(OP.i64_eq);
+          this.currentBody.push(OP.if, 0x40);
+
+          // Bind payload fields from pattern
+          for (let i = 0; i < pattern.fields.length; i++) {
+            const fieldPat = pattern.fields[i]!;
+            if (fieldPat.kind === 'IdentPattern') {
+              const bindIdx = this.addLocal(fieldPat.name, WASM_I64);
+              this.currentBody.push(OP.local_get, ...encodeU32(subjectIdx));
+              this.currentBody.push(OP.i32_wrap_i64);
+              this.currentBody.push(OP.i64_load, 0x03, ...encodeU32(8 + i * 8));
+              this.currentBody.push(OP.local_set, ...encodeU32(bindIdx));
+            }
+          }
+
+          this.emitMatchArmBody(arm.body);
+          if (index + 1 < arms.length) {
+            this.currentBody.push(OP.else);
+            this.emitMatchArms(arms, index + 1, subjectIdx, subjectType);
+          }
+          this.currentBody.push(OP.end);
+        }
+      } else {
+        // Unknown constructor — just emit the body as fallthrough
+        this.emitMatchArmBody(arm.body);
+      }
     }
   }
 
@@ -610,8 +677,14 @@ export class WasmGenerator {
     if (idx !== undefined) {
       this.currentBody.push(OP.local_get, ...encodeU32(idx));
     } else {
-      // Unknown variable — push 0
-      this.currentBody.push(OP.i64_const, ...encodeI64(0));
+      // Check if this is a unit enum variant
+      const variant = this.enumVariants.get(name);
+      if (variant && variant.fieldCount === 0) {
+        this.currentBody.push(OP.i64_const, ...encodeI64(variant.tag));
+      } else {
+        // Unknown variable — push 0
+        this.currentBody.push(OP.i64_const, ...encodeI64(0));
+      }
     }
   }
 
@@ -706,7 +779,41 @@ export class WasmGenerator {
       return;
     }
 
-    if (calleeName && this.funcNames.has(calleeName)) {
+    // Check if this is an enum variant constructor (tuple variant)
+    if (calleeName && this.enumVariants.has(calleeName)) {
+      const variant = this.enumVariants.get(calleeName)!;
+      if (variant.fieldCount === 0) {
+        // Unit variant called as function — just push the tag
+        this.currentBody.push(OP.i64_const, ...encodeI64(variant.tag));
+      } else {
+        // Tuple variant: allocate memory — tag (8 bytes) + fields (8 bytes each)
+        const totalSize = 8 + variant.fieldCount * 8;
+
+        // Bump allocate
+        this.currentBody.push(OP.global_get, ...encodeU32(0)); // heap pointer
+        const tmpIdx = this.addLocal('__variant_ptr', WASM_I32);
+        this.currentBody.push(OP.local_tee, ...encodeU32(tmpIdx));
+        this.currentBody.push(OP.i32_const, ...encodeI32(totalSize));
+        this.currentBody.push(OP.i32_add);
+        this.currentBody.push(OP.global_set, ...encodeU32(0)); // update heap pointer
+
+        // Store tag at offset 0
+        this.currentBody.push(OP.local_get, ...encodeU32(tmpIdx));
+        this.currentBody.push(OP.i64_const, ...encodeI64(variant.tag));
+        this.currentBody.push(OP.i64_store, 0x03, ...encodeU32(0));
+
+        // Store each field
+        for (let i = 0; i < expr.args.length && i < variant.fieldCount; i++) {
+          this.currentBody.push(OP.local_get, ...encodeU32(tmpIdx));
+          this.emitExpr(expr.args[i]!.value);
+          this.currentBody.push(OP.i64_store, 0x03, ...encodeU32(8 + i * 8));
+        }
+
+        // Return pointer as i64
+        this.currentBody.push(OP.local_get, ...encodeU32(tmpIdx));
+        this.currentBody.push(OP.i64_extend_i32_s);
+      }
+    } else if (calleeName && this.funcNames.has(calleeName)) {
       // Emit arguments
       for (const arg of expr.args) {
         this.emitExpr(arg.value);
@@ -949,6 +1056,14 @@ export class WasmGenerator {
     }
   }
 
+  /** Check if any enum variant requires heap allocation (tuple/struct variants). */
+  private hasHeapEnumVariants(): boolean {
+    for (const v of this.enumVariants.values()) {
+      if (v.fieldCount > 0) return true;
+    }
+    return false;
+  }
+
   private addLocal(name: string, type: number): number {
     const index = this.nextLocalIndex++;
     this.locals.push({ name, type, index });
@@ -1029,8 +1144,9 @@ export class WasmGenerator {
       ...encodeU32(pages),
     ]));
 
-    // Global section: heap pointer (mutable i32)
-    if (this.structLayouts.size > 0) {
+    // Global section: heap pointer (mutable i32) — needed for structs and tuple enum variants
+    const needsHeap = this.structLayouts.size > 0 || this.hasHeapEnumVariants();
+    if (needsHeap) {
       const globals = [
         [
           WASM_I32,       // type: i32
