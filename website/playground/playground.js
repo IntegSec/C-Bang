@@ -429,6 +429,68 @@ fn main() with IO {
     println!("Mandelbrot fractal rendered — 10,000 pixels, 80 iterations each!");
 }`,
 
+  minigame: `// Mini Game — Catch the Falling Square
+// Demonstrates: input macros, audio, canvas, game loop, math builtins
+
+state player_x: f64 = 175.0
+state target_x: f64 = 100.0
+state target_y: f64 = 0.0
+state score: i32 = 0
+state speed: f64 = 3.0
+
+#[intent("update game state each frame")]
+fn update(dt: f64) {
+    if key_is_down!("ArrowLeft") { player_x = player_x - 200.0 * dt; }
+    if key_is_down!("ArrowRight") { player_x = player_x + 200.0 * dt; }
+    if mouse_is_down!() { player_x = mouse_x!() - 25.0; }
+    if touch_is_active!() { player_x = touch_x!() - 25.0; }
+    if player_x < 0.0 { player_x = 0.0; }
+    if player_x > 350.0 { player_x = 350.0; }
+    target_y = target_y + speed * 60.0 * dt;
+    if target_y > 400.0 {
+        target_y = 0.0;
+        target_x = math_floor!(math_random!() * 350.0);
+        speed = speed + 0.2;
+    }
+    if target_y > 350.0 {
+        let dx: f64 = target_x - player_x;
+        if dx > 0.0 - 50.0 { if dx < 50.0 {
+            score = score + 1;
+            sfx_coin!();
+            target_y = 0.0;
+            target_x = math_floor!(math_random!() * 350.0);
+        } }
+    }
+}
+
+#[intent("render the game scene")]
+fn render() {
+    canvas_fill_style!("#1a1a2e");
+    canvas_fill_rect!(0.0, 0.0, 400.0, 400.0);
+    canvas_fill_style!("#e94560");
+    canvas_fill_rect!(target_x, target_y, 30.0, 30.0);
+    canvas_fill_style!("#0f3460");
+    canvas_fill_rect!(player_x, 360.0, 50.0, 30.0);
+    canvas_font!("16px monospace");
+    canvas_fill_style!("#ffffff");
+    canvas_text!("Score: {score}", 10.0, 25.0);
+    canvas_font!("11px monospace");
+    canvas_fill_style!("#555577");
+    canvas_text!("Arrow keys or mouse to move", 100.0, 390.0);
+}
+
+fn setup() {
+    audio_init!();
+    scene_register!("game", setup, update, render);
+    scene_switch!("game");
+}
+
+fn main() with IO {
+    game_init!(400, 400, setup);
+    game_run!();
+    println!("Mini Game — catch the falling squares!");
+}`,
+
   spinning: `// 3D Spinning Cube — animated canvas with starfield
 // Demonstrates: state, canvas_animate!, math builtins, intents
 
@@ -543,6 +605,623 @@ fn main() with IO {
 }`,
 };
 
+// ── Game Engine Runtime Strings ──────────────────────────────────────────────
+// Extracted from compiler/src/codegen/runtime/*-runtime.ts
+// These are injected into the sandbox iframe when the generated code uses them.
+
+var INPUT_RUNTIME = '\n' +
+'var __input = (function() {\n' +
+'  var keys = {};\n' +
+'  var justPressed = {};\n' +
+'  var justReleased = {};\n' +
+'  var mouseState = { x: 0, y: 0, down: false, justClicked: false };\n' +
+'  var touchState = { x: 0, y: 0, active: false, count: 0 };\n' +
+'  var gamepadState = { connected: false, axes: [0,0,0,0], buttons: [] };\n' +
+'  var callbacks = { keydown: [], keyup: [], mousemove: [], mouseclick: [], touchstart: [], touchmove: [], touchend: [] };\n' +
+'\n' +
+'  document.addEventListener(\'keydown\', function(e) {\n' +
+'    if (!keys[e.key]) justPressed[e.key] = true;\n' +
+'    keys[e.key] = true;\n' +
+'    for (var i = 0; i < callbacks.keydown.length; i++) callbacks.keydown[i](e.key);\n' +
+'    e.preventDefault();\n' +
+'  });\n' +
+'  document.addEventListener(\'keyup\', function(e) {\n' +
+'    keys[e.key] = false;\n' +
+'    justReleased[e.key] = true;\n' +
+'    for (var i = 0; i < callbacks.keyup.length; i++) callbacks.keyup[i](e.key);\n' +
+'  });\n' +
+'\n' +
+'  var canvas = document.getElementById(\'c\') || document.querySelector(\'canvas\') || document.body;\n' +
+'  canvas.addEventListener(\'mousemove\', function(e) {\n' +
+'    var rect = (canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 });\n' +
+'    mouseState.x = e.clientX - rect.left;\n' +
+'    mouseState.y = e.clientY - rect.top;\n' +
+'    for (var i = 0; i < callbacks.mousemove.length; i++) callbacks.mousemove[i](mouseState.x, mouseState.y);\n' +
+'  });\n' +
+'  canvas.addEventListener(\'mousedown\', function(e) {\n' +
+'    mouseState.down = true;\n' +
+'    mouseState.justClicked = true;\n' +
+'    for (var i = 0; i < callbacks.mouseclick.length; i++) callbacks.mouseclick[i](mouseState.x, mouseState.y);\n' +
+'  });\n' +
+'  canvas.addEventListener(\'mouseup\', function(e) { mouseState.down = false; });\n' +
+'\n' +
+'  canvas.addEventListener(\'touchstart\', function(e) {\n' +
+'    e.preventDefault();\n' +
+'    touchState.active = true;\n' +
+'    touchState.count = e.touches.length;\n' +
+'    if (e.touches.length > 0) {\n' +
+'      var rect = (canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 });\n' +
+'      touchState.x = e.touches[0].clientX - rect.left;\n' +
+'      touchState.y = e.touches[0].clientY - rect.top;\n' +
+'    }\n' +
+'    for (var i = 0; i < callbacks.touchstart.length; i++) callbacks.touchstart[i](touchState.x, touchState.y);\n' +
+'  }, { passive: false });\n' +
+'  canvas.addEventListener(\'touchmove\', function(e) {\n' +
+'    e.preventDefault();\n' +
+'    touchState.count = e.touches.length;\n' +
+'    if (e.touches.length > 0) {\n' +
+'      var rect = (canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 });\n' +
+'      touchState.x = e.touches[0].clientX - rect.left;\n' +
+'      touchState.y = e.touches[0].clientY - rect.top;\n' +
+'    }\n' +
+'    for (var i = 0; i < callbacks.touchmove.length; i++) callbacks.touchmove[i](touchState.x, touchState.y);\n' +
+'  }, { passive: false });\n' +
+'  canvas.addEventListener(\'touchend\', function(e) {\n' +
+'    touchState.count = e.touches.length;\n' +
+'    if (e.touches.length === 0) touchState.active = false;\n' +
+'    for (var i = 0; i < callbacks.touchend.length; i++) callbacks.touchend[i]();\n' +
+'  });\n' +
+'\n' +
+'  window.addEventListener(\'gamepadconnected\', function() { gamepadState.connected = true; });\n' +
+'  window.addEventListener(\'gamepaddisconnected\', function() { gamepadState.connected = false; });\n' +
+'\n' +
+'  return {\n' +
+'    keyIsDown: function(k) { return !!keys[k]; },\n' +
+'    keyJustPressed: function(k) { return !!justPressed[k]; },\n' +
+'    keyJustReleased: function(k) { return !!justReleased[k]; },\n' +
+'    onKeyDown: function(cb) { callbacks.keydown.push(cb); },\n' +
+'    onKeyUp: function(cb) { callbacks.keyup.push(cb); },\n' +
+'    mouseX: function() { return mouseState.x; },\n' +
+'    mouseY: function() { return mouseState.y; },\n' +
+'    mouseIsDown: function() { return mouseState.down; },\n' +
+'    mouseJustClicked: function() { return mouseState.justClicked; },\n' +
+'    onMouseMove: function(cb) { callbacks.mousemove.push(cb); },\n' +
+'    onMouseClick: function(cb) { callbacks.mouseclick.push(cb); },\n' +
+'    touchX: function() { return touchState.x; },\n' +
+'    touchY: function() { return touchState.y; },\n' +
+'    touchIsActive: function() { return touchState.active; },\n' +
+'    touchCount: function() { return touchState.count; },\n' +
+'    onTouchStart: function(cb) { callbacks.touchstart.push(cb); },\n' +
+'    onTouchMove: function(cb) { callbacks.touchmove.push(cb); },\n' +
+'    onTouchEnd: function(cb) { callbacks.touchend.push(cb); },\n' +
+'    gamepadConnected: function() {\n' +
+'      gamepadState.connected = false;\n' +
+'      var gps = navigator.getGamepads ? navigator.getGamepads() : [];\n' +
+'      for (var i = 0; i < gps.length; i++) { if (gps[i]) { gamepadState.connected = true; break; } }\n' +
+'      return gamepadState.connected;\n' +
+'    },\n' +
+'    gamepadAxis: function(idx) {\n' +
+'      var gps = navigator.getGamepads ? navigator.getGamepads() : [];\n' +
+'      for (var i = 0; i < gps.length; i++) {\n' +
+'        if (gps[i] && gps[i].axes[idx] !== undefined) return gps[i].axes[idx];\n' +
+'      }\n' +
+'      return 0;\n' +
+'    },\n' +
+'    gamepadButton: function(idx) {\n' +
+'      var gps = navigator.getGamepads ? navigator.getGamepads() : [];\n' +
+'      for (var i = 0; i < gps.length; i++) {\n' +
+'        if (gps[i] && gps[i].buttons[idx]) return gps[i].buttons[idx].pressed;\n' +
+'      }\n' +
+'      return false;\n' +
+'    },\n' +
+'    resetFrame: function() {\n' +
+'      justPressed = {};\n' +
+'      justReleased = {};\n' +
+'      mouseState.justClicked = false;\n' +
+'    }\n' +
+'  };\n' +
+'})();\n';
+
+var AUDIO_RUNTIME = '\n' +
+'var __audio = (function() {\n' +
+'  var ctx = null;\n' +
+'  var masterGain = null;\n' +
+'  var musicEl = null;\n' +
+'  var muted = false;\n' +
+'\n' +
+'  function ensureCtx() {\n' +
+'    if (!ctx) {\n' +
+'      ctx = new (window.AudioContext || window.webkitAudioContext)();\n' +
+'      masterGain = ctx.createGain();\n' +
+'      masterGain.connect(ctx.destination);\n' +
+'    }\n' +
+'    if (ctx.state === \'suspended\') ctx.resume();\n' +
+'    return ctx;\n' +
+'  }\n' +
+'\n' +
+'  function beep(freq, dur, vol) {\n' +
+'    var c = ensureCtx();\n' +
+'    var osc = c.createOscillator();\n' +
+'    var gain = c.createGain();\n' +
+'    osc.frequency.value = freq;\n' +
+'    gain.gain.value = (vol !== undefined ? vol : 0.3) * (muted ? 0 : 1);\n' +
+'    osc.connect(gain);\n' +
+'    gain.connect(masterGain);\n' +
+'    osc.start(c.currentTime);\n' +
+'    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (dur || 0.1));\n' +
+'    osc.stop(c.currentTime + (dur || 0.1) + 0.05);\n' +
+'  }\n' +
+'\n' +
+'  function noise(dur, vol) {\n' +
+'    var c = ensureCtx();\n' +
+'    var bufSize = c.sampleRate * (dur || 0.1);\n' +
+'    var buf = c.createBuffer(1, bufSize, c.sampleRate);\n' +
+'    var data = buf.getChannelData(0);\n' +
+'    for (var i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;\n' +
+'    var src = c.createBufferSource();\n' +
+'    src.buffer = buf;\n' +
+'    var gain = c.createGain();\n' +
+'    gain.gain.value = (vol !== undefined ? vol : 0.3) * (muted ? 0 : 1);\n' +
+'    src.connect(gain);\n' +
+'    gain.connect(masterGain);\n' +
+'    src.start();\n' +
+'    src.stop(c.currentTime + (dur || 0.1));\n' +
+'  }\n' +
+'\n' +
+'  function sweep(f1, f2, dur, vol) {\n' +
+'    var c = ensureCtx();\n' +
+'    var osc = c.createOscillator();\n' +
+'    var gain = c.createGain();\n' +
+'    osc.frequency.value = f1;\n' +
+'    osc.frequency.linearRampToValueAtTime(f2, c.currentTime + (dur || 0.3));\n' +
+'    gain.gain.value = (vol !== undefined ? vol : 0.3) * (muted ? 0 : 1);\n' +
+'    osc.connect(gain);\n' +
+'    gain.connect(masterGain);\n' +
+'    osc.start();\n' +
+'    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (dur || 0.3));\n' +
+'    osc.stop(c.currentTime + (dur || 0.3) + 0.05);\n' +
+'  }\n' +
+'\n' +
+'  return {\n' +
+'    init: function() { ensureCtx(); },\n' +
+'    beep: beep,\n' +
+'    noise: noise,\n' +
+'    sweep: sweep,\n' +
+'    sfxCoin: function() { beep(880, 0.08, 0.3); setTimeout(function() { beep(1108, 0.12, 0.3); }, 80); },\n' +
+'    sfxHit: function() { beep(200, 0.15, 0.5); noise(0.05, 0.3); },\n' +
+'    sfxPowerup: function() { beep(440, 0.08, 0.3); setTimeout(function() { beep(554, 0.08, 0.3); }, 80); setTimeout(function() { beep(659, 0.12, 0.3); }, 160); },\n' +
+'    sfxLevelup: function() { beep(523, 0.1, 0.3); setTimeout(function() { beep(659, 0.1, 0.3); }, 100); setTimeout(function() { beep(784, 0.1, 0.3); }, 200); setTimeout(function() { beep(1047, 0.2, 0.4); }, 300); },\n' +
+'    sfxGameover: function() { beep(440, 0.2, 0.4); setTimeout(function() { beep(370, 0.2, 0.4); }, 200); setTimeout(function() { beep(311, 0.3, 0.3); }, 400); },\n' +
+'    sfxCombo: function(mult) { var f = 600 + (mult * 50); beep(f, 0.06, 0.3); setTimeout(function() { beep(f * 1.25, 0.08, 0.3); }, 60); },\n' +
+'    sfxFizz: function() {\n' +
+'      var c = ensureCtx();\n' +
+'      var bufSize = c.sampleRate * 0.4;\n' +
+'      var buf = c.createBuffer(1, bufSize, c.sampleRate);\n' +
+'      var data = buf.getChannelData(0);\n' +
+'      for (var i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;\n' +
+'      var src = c.createBufferSource();\n' +
+'      src.buffer = buf;\n' +
+'      var filter = c.createBiquadFilter();\n' +
+'      filter.type = \'highpass\';\n' +
+'      filter.frequency.value = 3000;\n' +
+'      var gain = c.createGain();\n' +
+'      gain.gain.value = 0.3 * (muted ? 0 : 1);\n' +
+'      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4);\n' +
+'      src.connect(filter);\n' +
+'      filter.connect(gain);\n' +
+'      gain.connect(masterGain);\n' +
+'      src.start();\n' +
+'      src.stop(c.currentTime + 0.4);\n' +
+'    },\n' +
+'    musicPlay: function(url) {\n' +
+'      if (musicEl) { musicEl.pause(); musicEl = null; }\n' +
+'      musicEl = new Audio(url);\n' +
+'      musicEl.loop = true;\n' +
+'      musicEl.volume = muted ? 0 : 0.5;\n' +
+'      musicEl.play().catch(function() {});\n' +
+'    },\n' +
+'    musicStop: function() { if (musicEl) { musicEl.pause(); musicEl.currentTime = 0; } },\n' +
+'    musicVolume: function(v) { if (musicEl) musicEl.volume = muted ? 0 : v; },\n' +
+'    masterVolume: function(v) { if (masterGain) masterGain.gain.value = v; },\n' +
+'    mute: function() { muted = true; if (masterGain) masterGain.gain.value = 0; if (musicEl) musicEl.volume = 0; },\n' +
+'    unmute: function() { muted = false; if (masterGain) masterGain.gain.value = 1; if (musicEl) musicEl.volume = 0.5; },\n' +
+'  };\n' +
+'})();\n';
+
+var SPRITE_RUNTIME = '\n' +
+'var __entity = (function() {\n' +
+'  var sprites = {};\n' +
+'  var pools = {};\n' +
+'\n' +
+'  function getSprite(id) {\n' +
+'    if (!sprites[id]) throw new Error(\'Sprite not found: \' + id);\n' +
+'    return sprites[id];\n' +
+'  }\n' +
+'\n' +
+'  return {\n' +
+'    create: function(id, x, y, w, h) {\n' +
+'      sprites[id] = { x: x, y: y, w: w, h: h, color: \'#fff\', visible: true,\n' +
+'        image: null, sheet: null, frame: 0, rotation: 0, scaleX: 1, scaleY: 1,\n' +
+'        opacity: 1, groups: [] };\n' +
+'    },\n' +
+'    setPos: function(id, x, y) { var s = getSprite(id); s.x = x; s.y = y; },\n' +
+'    setSize: function(id, w, h) { var s = getSprite(id); s.w = w; s.h = h; },\n' +
+'    setColor: function(id, c) { getSprite(id).color = c; },\n' +
+'    setVisible: function(id, v) { getSprite(id).visible = v; },\n' +
+'    getX: function(id) { return getSprite(id).x; },\n' +
+'    getY: function(id) { return getSprite(id).y; },\n' +
+'    getW: function(id) { return getSprite(id).w; },\n' +
+'    getH: function(id) { return getSprite(id).h; },\n' +
+'    destroy: function(id) { delete sprites[id]; },\n' +
+'    loadImage: function(id, url) {\n' +
+'      var s = getSprite(id);\n' +
+'      var img = new Image();\n' +
+'      img.src = url;\n' +
+'      s.image = img;\n' +
+'    },\n' +
+'    setSheet: function(id, fw, fh, cols) {\n' +
+'      getSprite(id).sheet = { fw: fw, fh: fh, cols: cols };\n' +
+'    },\n' +
+'    setFrame: function(id, f) { getSprite(id).frame = f; },\n' +
+'    setRotation: function(id, a) { getSprite(id).rotation = a; },\n' +
+'    setScale: function(id, sx, sy) { var s = getSprite(id); s.scaleX = sx; s.scaleY = sy; },\n' +
+'    setOpacity: function(id, a) { getSprite(id).opacity = a; },\n' +
+'    draw: function(id) {\n' +
+'      var s = getSprite(id);\n' +
+'      if (!s.visible) return;\n' +
+'      __ctx.save();\n' +
+'      __ctx.globalAlpha = s.opacity;\n' +
+'      __ctx.translate(s.x + s.w / 2, s.y + s.h / 2);\n' +
+'      __ctx.rotate(s.rotation);\n' +
+'      __ctx.scale(s.scaleX, s.scaleY);\n' +
+'      if (s.image && s.image.complete) {\n' +
+'        if (s.sheet) {\n' +
+'          var col = s.frame % s.sheet.cols;\n' +
+'          var row = Math.floor(s.frame / s.sheet.cols);\n' +
+'          __ctx.drawImage(s.image, col * s.sheet.fw, row * s.sheet.fh,\n' +
+'            s.sheet.fw, s.sheet.fh, -s.w / 2, -s.h / 2, s.w, s.h);\n' +
+'        } else {\n' +
+'          __ctx.drawImage(s.image, -s.w / 2, -s.h / 2, s.w, s.h);\n' +
+'        }\n' +
+'      } else {\n' +
+'        __ctx.fillStyle = s.color;\n' +
+'        __ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);\n' +
+'      }\n' +
+'      __ctx.restore();\n' +
+'    },\n' +
+'    drawAll: function() {\n' +
+'      var ids = Object.keys(sprites);\n' +
+'      for (var i = 0; i < ids.length; i++) {\n' +
+'        var s = sprites[ids[i]];\n' +
+'        if (s.visible) __entity.draw(ids[i]);\n' +
+'      }\n' +
+'    },\n' +
+'    collidesRect: function(a, b) {\n' +
+'      var sa = getSprite(a), sb = getSprite(b);\n' +
+'      return sa.x < sb.x + sb.w && sa.x + sa.w > sb.x &&\n' +
+'             sa.y < sb.y + sb.h && sa.y + sa.h > sb.y;\n' +
+'    },\n' +
+'    collidesPoint: function(id, px, py) {\n' +
+'      var s = getSprite(id);\n' +
+'      return px >= s.x && px <= s.x + s.w && py >= s.y && py <= s.y + s.h;\n' +
+'    },\n' +
+'    collidesCircle: function(a, b) {\n' +
+'      var sa = getSprite(a), sb = getSprite(b);\n' +
+'      var ax = sa.x + sa.w / 2, ay = sa.y + sa.h / 2, ar = sa.w / 2;\n' +
+'      var bx = sb.x + sb.w / 2, by = sb.y + sb.h / 2, br = sb.w / 2;\n' +
+'      var dx = ax - bx, dy = ay - by;\n' +
+'      return Math.sqrt(dx * dx + dy * dy) < ar + br;\n' +
+'    },\n' +
+'    collisionGroup: function(id, group) {\n' +
+'      var s = getSprite(id);\n' +
+'      if (s.groups.indexOf(group) === -1) s.groups.push(group);\n' +
+'    },\n' +
+'    checkGroupCollisions: function(ga, gb, cb) {\n' +
+'      var idsA = [], idsB = [];\n' +
+'      var ids = Object.keys(sprites);\n' +
+'      for (var i = 0; i < ids.length; i++) {\n' +
+'        if (sprites[ids[i]].groups.indexOf(ga) !== -1) idsA.push(ids[i]);\n' +
+'        if (sprites[ids[i]].groups.indexOf(gb) !== -1) idsB.push(ids[i]);\n' +
+'      }\n' +
+'      for (var a = 0; a < idsA.length; a++) {\n' +
+'        for (var b = 0; b < idsB.length; b++) {\n' +
+'          if (idsA[a] !== idsB[b] && __entity.collidesRect(idsA[a], idsB[b])) {\n' +
+'            cb(idsA[a], idsB[b]);\n' +
+'          }\n' +
+'        }\n' +
+'      }\n' +
+'    },\n' +
+'    poolCreate: function(name, max) {\n' +
+'      var entities = [];\n' +
+'      var free = [];\n' +
+'      for (var i = 0; i < max; i++) {\n' +
+'        var id = name + \'_\' + i;\n' +
+'        sprites[id] = { x: 0, y: 0, w: 0, h: 0, color: \'#fff\', visible: false,\n' +
+'          image: null, sheet: null, frame: 0, rotation: 0, scaleX: 1, scaleY: 1,\n' +
+'          opacity: 1, groups: [] };\n' +
+'        entities.push(id);\n' +
+'        free.push(id);\n' +
+'      }\n' +
+'      pools[name] = { entities: entities, free: free, active: [] };\n' +
+'    },\n' +
+'    poolSpawn: function(name) {\n' +
+'      var p = pools[name];\n' +
+'      if (!p || p.free.length === 0) return null;\n' +
+'      var id = p.free.pop();\n' +
+'      p.active.push(id);\n' +
+'      sprites[id].visible = true;\n' +
+'      return id;\n' +
+'    },\n' +
+'    poolRecycle: function(name, id) {\n' +
+'      var p = pools[name];\n' +
+'      if (!p) return;\n' +
+'      var idx = p.active.indexOf(id);\n' +
+'      if (idx !== -1) {\n' +
+'        p.active.splice(idx, 1);\n' +
+'        p.free.push(id);\n' +
+'        sprites[id].visible = false;\n' +
+'      }\n' +
+'    },\n' +
+'    poolForEach: function(name, cb) {\n' +
+'      var p = pools[name];\n' +
+'      if (!p) return;\n' +
+'      for (var i = 0; i < p.active.length; i++) {\n' +
+'        cb(p.active[i]);\n' +
+'      }\n' +
+'    },\n' +
+'  };\n' +
+'})();\n';
+
+var SCENE_RUNTIME = '\n' +
+'var __timer = (function() {\n' +
+'  var timers = {};\n' +
+'  return {\n' +
+'    set: function(id, dur, cb) { timers[id] = { remaining: dur, cb: cb, repeat: false, interval: dur }; },\n' +
+'    repeat: function(id, interval, cb) { timers[id] = { remaining: interval, cb: cb, repeat: true, interval: interval }; },\n' +
+'    cancel: function(id) { delete timers[id]; },\n' +
+'    step: function(dt) {\n' +
+'      var ids = Object.keys(timers);\n' +
+'      for (var i = 0; i < ids.length; i++) {\n' +
+'        var t = timers[ids[i]];\n' +
+'        t.remaining -= dt;\n' +
+'        if (t.remaining <= 0) {\n' +
+'          t.cb();\n' +
+'          if (t.repeat) { t.remaining += t.interval; }\n' +
+'          else { delete timers[ids[i]]; }\n' +
+'        }\n' +
+'      }\n' +
+'    },\n' +
+'  };\n' +
+'})();\n' +
+'\n' +
+'var __tween = (function() {\n' +
+'  var tweens = [];\n' +
+'  var easings = {\n' +
+'    linear: function(t) { return t; },\n' +
+'    ease_in: function(t) { return t * t; },\n' +
+'    ease_out: function(t) { return t * (2 - t); },\n' +
+'    ease_in_out: function(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; },\n' +
+'    bounce: function(t) { if (t < 1/2.75) return 7.5625*t*t; if (t < 2/2.75) return 7.5625*(t-=1.5/2.75)*t+0.75; if (t < 2.5/2.75) return 7.5625*(t-=2.25/2.75)*t+0.9375; return 7.5625*(t-=2.625/2.75)*t+0.984375; },\n' +
+'    elastic: function(t) { return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10*(t-1)) * Math.sin((t-1.1)*5*Math.PI); },\n' +
+'  };\n' +
+'  return {\n' +
+'    add: function(targetId, prop, from, to, dur, easing) {\n' +
+'      tweens.push({ targetId: targetId, prop: prop, from: from, to: to, dur: dur, elapsed: 0, easing: easings[easing] || easings.linear });\n' +
+'    },\n' +
+'    step: function(dt) {\n' +
+'      for (var i = tweens.length - 1; i >= 0; i--) {\n' +
+'        var tw = tweens[i];\n' +
+'        tw.elapsed += dt;\n' +
+'        var t = Math.min(tw.elapsed / tw.dur, 1);\n' +
+'        var val = tw.from + (tw.to - tw.from) * tw.easing(t);\n' +
+'        if (typeof __entity !== \'undefined\') {\n' +
+'          var s = __entity;\n' +
+'          if (tw.prop === \'x\') s.setPos(tw.targetId, val, s.getY(tw.targetId));\n' +
+'          else if (tw.prop === \'y\') s.setPos(tw.targetId, s.getX(tw.targetId), val);\n' +
+'          else if (tw.prop === \'opacity\') s.setOpacity(tw.targetId, val);\n' +
+'          else if (tw.prop === \'rotation\') s.setRotation(tw.targetId, val);\n' +
+'        }\n' +
+'        if (t >= 1) tweens.splice(i, 1);\n' +
+'      }\n' +
+'    },\n' +
+'  };\n' +
+'})();\n' +
+'\n' +
+'var __scene = (function() {\n' +
+'  var scenes = {};\n' +
+'  var stack = [];\n' +
+'  return {\n' +
+'    register: function(name, initFn, updateFn, renderFn) {\n' +
+'      scenes[name] = { init: initFn, update: updateFn, render: renderFn };\n' +
+'    },\n' +
+'    switchTo: function(name) {\n' +
+'      stack = [name];\n' +
+'      if (scenes[name] && scenes[name].init) scenes[name].init();\n' +
+'    },\n' +
+'    current: function() { return stack.length > 0 ? stack[stack.length - 1] : \'\'; },\n' +
+'    push: function(name) {\n' +
+'      stack.push(name);\n' +
+'      if (scenes[name] && scenes[name].init) scenes[name].init();\n' +
+'    },\n' +
+'    pop: function() {\n' +
+'      if (stack.length > 1) stack.pop();\n' +
+'      return __scene.current();\n' +
+'    },\n' +
+'    getUpdate: function() { var s = scenes[__scene.current()]; return s ? s.update : null; },\n' +
+'    getRender: function() { var s = scenes[__scene.current()]; return s ? s.render : null; },\n' +
+'  };\n' +
+'})();\n' +
+'\n' +
+'var __game = (function() {\n' +
+'  var startTime = 0;\n' +
+'  var lastTime = 0;\n' +
+'  var dt = 0;\n' +
+'  var frames = 0;\n' +
+'  var fps = 0;\n' +
+'  var fpsAccum = 0;\n' +
+'  var fpsFrames = 0;\n' +
+'  var paused = false;\n' +
+'  var cameraX = 0, cameraY = 0;\n' +
+'  var shakeIntensity = 0, shakeDuration = 0, shakeElapsed = 0;\n' +
+'  var zoomLevel = 1;\n' +
+'  var initFn = null;\n' +
+'\n' +
+'  function loop(timestamp) {\n' +
+'    if (!startTime) { startTime = timestamp; lastTime = timestamp; }\n' +
+'    var rawDt = (timestamp - lastTime) / 1000;\n' +
+'    dt = Math.min(rawDt, 0.1);\n' +
+'    lastTime = timestamp;\n' +
+'\n' +
+'    fpsAccum += rawDt;\n' +
+'    fpsFrames++;\n' +
+'    if (fpsAccum >= 1) { fps = fpsFrames; fpsFrames = 0; fpsAccum = 0; }\n' +
+'\n' +
+'    if (!paused) {\n' +
+'      if (typeof __input !== \'undefined\' && __input.gamepadConnected) __input.gamepadConnected();\n' +
+'      __timer.step(dt);\n' +
+'      __tween.step(dt);\n' +
+'      var updateFn = __scene.getUpdate();\n' +
+'      if (updateFn) updateFn(dt);\n' +
+'      __ctx.save();\n' +
+'      var ox = cameraX, oy = cameraY;\n' +
+'      if (shakeIntensity > 0) {\n' +
+'        shakeElapsed += dt;\n' +
+'        var factor = 1 - (shakeElapsed / shakeDuration);\n' +
+'        if (factor <= 0) { shakeIntensity = 0; }\n' +
+'        else { ox += (Math.random() - 0.5) * shakeIntensity * factor * 2; oy += (Math.random() - 0.5) * shakeIntensity * factor * 2; }\n' +
+'      }\n' +
+'      __ctx.translate(ox, oy);\n' +
+'      __ctx.scale(zoomLevel, zoomLevel);\n' +
+'      var renderFn = __scene.getRender();\n' +
+'      if (renderFn) renderFn();\n' +
+'      __ctx.restore();\n' +
+'      if (typeof __input !== \'undefined\' && __input.resetFrame) __input.resetFrame();\n' +
+'      frames++;\n' +
+'    }\n' +
+'    requestAnimationFrame(loop);\n' +
+'  }\n' +
+'\n' +
+'  return {\n' +
+'    init: function(w, h, fn) {\n' +
+'      __canvas.width = w;\n' +
+'      __canvas.height = h;\n' +
+'      initFn = fn;\n' +
+'      if (fn) fn();\n' +
+'    },\n' +
+'    run: function() { requestAnimationFrame(loop); },\n' +
+'    pause: function() { paused = true; },\n' +
+'    resume: function() { paused = false; },\n' +
+'    fps: function() { return fps; },\n' +
+'    deltaTime: function() { return dt; },\n' +
+'    elapsedTime: function() { return (lastTime - startTime) / 1000; },\n' +
+'    frameCount: function() { return frames; },\n' +
+'    cameraSet: function(x, y) { cameraX = x; cameraY = y; },\n' +
+'    cameraShake: function(intensity, duration) { shakeIntensity = intensity; shakeDuration = duration; shakeElapsed = 0; },\n' +
+'    cameraZoom: function(level) { zoomLevel = level; },\n' +
+'  };\n' +
+'})();\n';
+
+var NET_RUNTIME = '\n' +
+'var __net = (function() {\n' +
+'  var ws = null;\n' +
+'  var playerId = \'\';\n' +
+'  var handlers = {};\n' +
+'  var connected = false;\n' +
+'  var latency = 0;\n' +
+'  var pingInterval = null;\n' +
+'  var lastPingTime = 0;\n' +
+'  var disconnectCallbacks = [];\n' +
+'  var reconnectUrl = \'\';\n' +
+'  var reconnectAttempts = 0;\n' +
+'  var maxReconnectAttempts = 15;\n' +
+'  var playerSnapshots = {};\n' +
+'  var INTERP_DELAY = 100;\n' +
+'\n' +
+'  function send(type, data) {\n' +
+'    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: type, data: data }));\n' +
+'  }\n' +
+'\n' +
+'  function handleMessage(msg) {\n' +
+'    var parsed = JSON.parse(msg.data);\n' +
+'    if (parsed.type === \'__pong\') {\n' +
+'      latency = Date.now() - lastPingTime;\n' +
+'      return;\n' +
+'    }\n' +
+'    if (parsed.type === \'__assign_id\') {\n' +
+'      playerId = parsed.data.id;\n' +
+'      return;\n' +
+'    }\n' +
+'    if (parsed.type === \'__player_update\') {\n' +
+'      var pid = parsed.data.player_id;\n' +
+'      if (!playerSnapshots[pid]) playerSnapshots[pid] = [];\n' +
+'      parsed.data.timestamp = Date.now();\n' +
+'      playerSnapshots[pid].push(parsed.data);\n' +
+'      if (playerSnapshots[pid].length > 10) playerSnapshots[pid].shift();\n' +
+'    }\n' +
+'    var cbs = handlers[parsed.type];\n' +
+'    if (cbs) { for (var i = 0; i < cbs.length; i++) cbs[i](parsed.data); }\n' +
+'  }\n' +
+'\n' +
+'  function tryReconnect() {\n' +
+'    if (reconnectAttempts >= maxReconnectAttempts) return;\n' +
+'    reconnectAttempts++;\n' +
+'    setTimeout(function() {\n' +
+'      if (!connected && reconnectUrl) __net.connect(reconnectUrl);\n' +
+'    }, 2000);\n' +
+'  }\n' +
+'\n' +
+'  var __net = {\n' +
+'    connect: function(url) {\n' +
+'      reconnectUrl = url;\n' +
+'      ws = new WebSocket(url);\n' +
+'      ws.onopen = function() { connected = true; reconnectAttempts = 0;\n' +
+'        pingInterval = setInterval(function() { lastPingTime = Date.now(); send(\'__ping\', {}); }, 5000);\n' +
+'      };\n' +
+'      ws.onmessage = handleMessage;\n' +
+'      ws.onclose = function() {\n' +
+'        connected = false;\n' +
+'        if (pingInterval) clearInterval(pingInterval);\n' +
+'        for (var i = 0; i < disconnectCallbacks.length; i++) disconnectCallbacks[i]();\n' +
+'        tryReconnect();\n' +
+'      };\n' +
+'      ws.onerror = function() {};\n' +
+'    },\n' +
+'    disconnect: function() { reconnectUrl = \'\'; if (ws) ws.close(); },\n' +
+'    send: send,\n' +
+'    on: function(type, cb) { if (!handlers[type]) handlers[type] = []; handlers[type].push(cb); },\n' +
+'    onDisconnect: function(cb) { disconnectCallbacks.push(cb); },\n' +
+'    isConnected: function() { return connected; },\n' +
+'    latency: function() { return latency; },\n' +
+'    playerId: function() { return playerId; },\n' +
+'    roomCreate: function(mode, max) { send(\'room_create\', { mode: mode, max_players: max }); },\n' +
+'    roomJoin: function(id) { send(\'room_join\', { room_id: id }); },\n' +
+'    roomJoinRandom: function(mode) { send(\'room_join_random\', { mode: mode }); },\n' +
+'    roomLeave: function() { send(\'room_leave\', {}); },\n' +
+'    roomPlayers: function() { return 0; },\n' +
+'    roomOnPlayerJoin: function(cb) { __net.on(\'player_joined\', cb); },\n' +
+'    roomOnPlayerLeave: function(cb) { __net.on(\'player_left\', cb); },\n' +
+'    roomSpectate: function(id) { send(\'room_spectate\', { room_id: id }); },\n' +
+'    roomSpectatorCount: function() { return 0; },\n' +
+'    syncPos: function(x, y) { send(\'sync_pos\', { x: x, y: y }); },\n' +
+'    syncState: function(key, val) { send(\'sync_state\', { key: key, value: val }); },\n' +
+'    onPlayerUpdate: function(cb) { __net.on(\'__player_update\', cb); },\n' +
+'    interpolate: function(pid, prop) {\n' +
+'      var snaps = playerSnapshots[pid];\n' +
+'      if (!snaps || snaps.length < 2) return snaps && snaps.length === 1 ? (snaps[0][prop] || 0) : 0;\n' +
+'      var now = Date.now() - INTERP_DELAY;\n' +
+'      var a = snaps[snaps.length - 2], b = snaps[snaps.length - 1];\n' +
+'      var range = b.timestamp - a.timestamp;\n' +
+'      if (range <= 0) return b[prop] || 0;\n' +
+'      var t = Math.max(0, Math.min(1, (now - a.timestamp) / range));\n' +
+'      return (a[prop] || 0) + ((b[prop] || 0) - (a[prop] || 0)) * t;\n' +
+'    },\n' +
+'    leaderboardSubmit: function(score) { send(\'leaderboard_submit\', { score: score }); },\n' +
+'    leaderboardGet: function(scope, count, cb) { send(\'leaderboard_get\', { scope: scope, count: count }); __net.on(\'leaderboard_data\', cb); },\n' +
+'    leaderboardRank: function() { return 0; },\n' +
+'  };\n' +
+'  return __net;\n' +
+'})();\n';
+
 function getEditorValue() {
   return document.getElementById('editor').value;
 }
@@ -621,9 +1300,17 @@ function run() {
     execCode += '\nmain();';
   }
 
-  // Detect if code uses canvas functions or animation
-  var usesCanvas = execCode.indexOf('__canvas') !== -1 || execCode.indexOf('__ctx') !== -1;
-  var isAnimated = execCode.indexOf('__animLoop') !== -1;
+  // Detect if code uses canvas functions, animation, or game engine features
+  var usesCanvas = execCode.indexOf('__canvas') !== -1 || execCode.indexOf('__ctx') !== -1 || execCode.indexOf('__entity.') !== -1;
+  var isAnimated = execCode.indexOf('__animLoop') !== -1 || execCode.indexOf('__game.run') !== -1;
+
+  // Build runtime injection code based on what the generated code uses
+  var runtimeCode = '';
+  if (execCode.indexOf('__input.') !== -1) runtimeCode += INPUT_RUNTIME;
+  if (execCode.indexOf('__audio.') !== -1) runtimeCode += AUDIO_RUNTIME;
+  if (execCode.indexOf('__entity.') !== -1) runtimeCode += SPRITE_RUNTIME;
+  if (execCode.indexOf('__scene.') !== -1 || execCode.indexOf('__game.') !== -1 || execCode.indexOf('__timer.') !== -1 || execCode.indexOf('__tween.') !== -1) runtimeCode += SCENE_RUNTIME;
+  if (execCode.indexOf('__net.') !== -1) runtimeCode += NET_RUNTIME;
 
   // Execute in a sandboxed iframe via Blob URL to avoid needing unsafe-eval.
   // The iframe posts console output back to us via postMessage.
@@ -639,7 +1326,7 @@ function run() {
     'console.log = function() { __logs.push(Array.prototype.slice.call(arguments).join(" ")); };' +
     'console.warn = function() { __logs.push("[warn] " + Array.prototype.slice.call(arguments).join(" ")); };' +
     'console.error = function() { __logs.push("[error] " + Array.prototype.slice.call(arguments).join(" ")); };' +
-    'try {' + execCode.replace(/<\/script>/gi, '<\\/script>') + ';' +
+    'try {' + runtimeCode.replace(/<\/script>/gi, '<\\/script>') + execCode.replace(/<\/script>/gi, '<\\/script>') + ';' +
     '  var __canvasData = null; try { __canvasData = __canvas.toDataURL("image/png"); } catch(ce) {}' +
     '  parent.postMessage({ type: "cbang-output", logs: __logs, canvasData: __canvasData }, "*");' +
     '} catch(e) {' +
@@ -680,15 +1367,18 @@ function run() {
     document.body.appendChild(iframe);
   }
 
-  // Listen for result
-  var timeout = setTimeout(function () {
-    window.removeEventListener('message', onMessage);
-    consoleOutput.textContent = '(timeout — program took too long)';
-    consoleOutput.className = 'pg-output error';
-    resetRunBtn();
-    if (!isAnimated) { iframe.remove(); }
-    URL.revokeObjectURL(url);
-  }, 15000);
+  // Listen for result (no timeout for animated/game code — games run indefinitely)
+  var timeout = null;
+  if (!isAnimated) {
+    timeout = setTimeout(function () {
+      window.removeEventListener('message', onMessage);
+      consoleOutput.textContent = '(timeout — program took too long)';
+      consoleOutput.className = 'pg-output error';
+      resetRunBtn();
+      iframe.remove();
+      URL.revokeObjectURL(url);
+    }, 15000);
+  }
 
   function onMessage(e) {
     // Only accept messages with our specific type marker. The sandboxed iframe
@@ -696,7 +1386,7 @@ function run() {
     // The unique message type acts as our validation token.
     if (!e.data || e.data.type !== 'cbang-output') return;
 
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
     window.removeEventListener('message', onMessage);
     var logText = (Array.isArray(e.data.logs) ? e.data.logs : []).join('\n');
     if (e.data.error) {
