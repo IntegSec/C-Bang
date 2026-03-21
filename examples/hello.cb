@@ -1,6 +1,6 @@
 // hello.cb — The classic "Hello, World!" in C!
 
 #[intent("Print a greeting to standard output")]
-fn main() {
+fn main() with IO {
     print("Hello from C!");
 }
