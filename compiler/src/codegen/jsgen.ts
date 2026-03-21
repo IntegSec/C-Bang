@@ -31,10 +31,20 @@ import type {
 import { getMacroHandler } from './macro-registry.js';
 import { registerMathMacros } from './macros/math-macros.js';
 import { registerCanvasMacros } from './macros/canvas-macros.js';
+import { registerAudioMacros } from './macros/audio-macros.js';
+import { registerInputMacros } from './macros/input-macros.js';
+import { registerSceneMacros } from './macros/scene-macros.js';
+import { registerSpriteMacros } from './macros/sprite-macros.js';
+import { registerNetMacros } from './macros/net-macros.js';
 
 // Register all macro handlers at module load time
 registerMathMacros();
 registerCanvasMacros();
+registerAudioMacros();
+registerInputMacros();
+registerSceneMacros();
+registerSpriteMacros();
+registerNetMacros();
 
 export class JsGenerator {
   private output: string = '';
