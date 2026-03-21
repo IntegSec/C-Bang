@@ -27,6 +27,7 @@ import type { Type } from './types.js';
 import { NUMERIC_TYPES, INTEGER_TYPES, FLOAT_TYPES, typeEquals, typeToString } from './types.js';
 import { Environment } from './environment.js';
 import { registerBuiltins } from './builtins.js';
+import { getMacroReturnType } from './macro-types.js';
 
 const COMPARISON_OPS = new Set(['==', '!=', '<', '>', '<=', '>=']);
 const LOGICAL_OPS = new Set(['&&', '||']);
@@ -595,14 +596,10 @@ export class Checker {
       this.inferExpr(arg);
     }
 
-    // Math macros return f64
-    const mathMacros = [
-      'math_sin', 'math_cos', 'math_tan', 'math_sqrt',
-      'math_floor', 'math_abs', 'math_atan2', 'math_min',
-      'math_max', 'math_round', 'math_random',
-    ];
-    if (mathMacros.includes(expr.name)) {
-      return { kind: 'Primitive', name: 'f64' };
+    // Check registry for macro return type
+    const registeredType = getMacroReturnType(expr.name);
+    if (registeredType) {
+      return registeredType;
     }
 
     return { kind: 'Unit' };

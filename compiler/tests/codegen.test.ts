@@ -987,4 +987,35 @@ function early_exit() {
       expect(lines.find(l => l.includes('const y = 1;'))).toMatch(/^      const/);
     });
   });
+
+  // ─── 30. Macro registry ─────────────────────────────────────────
+
+  describe('macro registry', () => {
+    it('maps canvas_fill_rect through registry', () => {
+      const js = generate(`
+        fn main() {
+          canvas_fill_rect!(10, 20, 100, 50);
+        }
+      `);
+      expect(js).toContain('__ctx.fillRect(10, 20, 100, 50)');
+    });
+
+    it('maps math_sin through registry', () => {
+      const js = generate(`
+        fn main() {
+          let x = math_sin!(3.14);
+        }
+      `);
+      expect(js).toContain('Math.sin(3.14)');
+    });
+
+    it('maps canvas_animate through registry', () => {
+      const js = generate(`
+        fn main() {
+          canvas_animate!(draw);
+        }
+      `);
+      expect(js).toContain('(function __animLoop() { draw(); requestAnimationFrame(__animLoop); })()');
+    });
+  });
 });
