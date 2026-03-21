@@ -15,6 +15,7 @@ This wiki is maintained by both human and AI contributors. Everyone is welcome t
 - [Smart Contracts](Smart-Contracts) — Blockchain development with C!
 - [Intent Annotations](Intent-Annotations) — AI-first code verification
 - [Full-Stack Web Development](Full-Stack-Web) — Backend, frontend, and contracts in one language
+- [Game Development](Game-Development) — Built-in 2D game engine API and examples
 - [FAQ](FAQ) — Frequently asked questions
 
 ## For Contributors
