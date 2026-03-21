@@ -1,129 +1,77 @@
 // main.cb — Mini Catch Game
-// Catch falling Dr Pepper cans before they hit the ground!
-// Demonstrates: game loop, input, audio, canvas rendering, delta_time.
+// Catch falling Dr Pepper drops! Arrow keys, mouse, or touch to move.
 
-#[intent("A simple falling-object catch game")]
-fn main() with IO {
-    game_init!("Dr Pepper Catch!", 400, 500);
+state px: f64 = 170.0
+state dy: f64 = -20.0
+state dx: f64 = 180.0
+state sc: i32 = 0
+state lv: i32 = 3
+state sp: f64 = 140.0
+state over: bool = false
 
-    // --- State ---
-    let mut paddle_x: f64 = 170.0;
-    let paddle_y: f64 = 460.0;
-    let paddle_w: f64 = 60.0;
-    let paddle_h: f64 = 14.0;
-    let paddle_speed: f64 = 280.0;
+fn frame() {
+    // Update
+    if key_is_down!("ArrowLeft") { px = px - 280.0 * 0.016; }
+    if key_is_down!("ArrowRight") { px = px + 280.0 * 0.016; }
+    if mouse_is_down!() { px = mouse_x!() - 30.0; }
+    if touch_is_active!() { px = touch_x!() - 30.0; }
+    if px < 0.0 { px = 0.0; }
+    if px > 340.0 { px = 340.0; }
 
-    let mut can_x: f64 = 180.0;
-    let mut can_y: f64 = -20.0;
-    let can_w: f64 = 24.0;
-    let can_h: f64 = 32.0;
-    let mut can_speed: f64 = 140.0;
+    dy = dy + sp * 0.016;
 
-    let mut score: i32 = 0;
-    let mut lives: i32 = 3;
-    let mut game_over: bool = false;
-
-    // --- Helpers ---
-    fn random_x() -> f64 {
-        math_random!() * 376.0
+    // Catch
+    if dy > 440.0 {
+        if dx + 24.0 > px {
+            if dx < px + 60.0 {
+                sc = sc + 1;
+                sp = sp + 8.0;
+                sfx_coin!();
+                dx = math_floor!(math_random!() * 376.0);
+                dy = 0.0 - 32.0;
+            }
+        }
     }
 
-    // --- Play scene ---
-    scene_register!("play", fn() {
-        if game_over {
-            scene_switch!("end");
-            return;
-        }
+    // Miss
+    if dy > 500.0 {
+        lv = lv - 1;
+        sfx_hit!();
+        dx = math_floor!(math_random!() * 376.0);
+        dy = 0.0 - 32.0;
+    }
 
-        let dt = delta_time!();
+    // Draw
+    canvas_fill_style!("#1a1a2e");
+    canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
 
-        // -- Input: keyboard + mouse/touch ---
-        if key_is_down!("ArrowLeft") {
-            paddle_x = paddle_x - paddle_speed * dt;
-        }
-        if key_is_down!("ArrowRight") {
-            paddle_x = paddle_x + paddle_speed * dt;
-        }
-
-        // Mouse / touch override (move paddle center to pointer)
-        if mouse_is_down!() {
-            paddle_x = mouse_x!() - paddle_w / 2.0;
-        }
-        if touch_is_active!() {
-            paddle_x = touch_x!() - paddle_w / 2.0;
-        }
-
-        // Clamp paddle inside canvas
-        if paddle_x < 0.0 { paddle_x = 0.0; }
-        if paddle_x > 400.0 - paddle_w { paddle_x = 400.0 - paddle_w; }
-
-        // -- Update can position --
-        can_y = can_y + can_speed * dt;
-
-        // -- Collision: paddle catches the can --
-        if can_y + can_h >= paddle_y
-            && can_x + can_w >= paddle_x
-            && can_x <= paddle_x + paddle_w {
-            score = score + 1;
-            sfx_coin!();
-            // Speed up slightly each catch
-            can_speed = can_speed + 8.0;
-            // Reset can
-            can_x = random_x();
-            can_y = -can_h;
-        }
-
-        // -- Missed: can fell past the bottom --
-        if can_y > 500.0 {
-            lives = lives - 1;
-            sfx_hit!();
-            if lives <= 0 {
-                game_over = true;
-                sfx_gameover!();
-            }
-            can_x = random_x();
-            can_y = -can_h;
-        }
-
-        // -- Draw --
-        canvas_clear!();
-
-        // Sky background
-        canvas_fill_style!("#1a1a2e");
-        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
-
-        // Paddle
-        canvas_fill_style!("#e94560");
-        canvas_fill_rect!(paddle_x, paddle_y, paddle_w, paddle_h);
-
-        // Falling can (drawn as a rounded rectangle)
-        canvas_fill_style!("#8b0000");
-        canvas_fill_rect!(can_x, can_y, can_w, can_h);
-        canvas_fill_style!("#fff");
-        canvas_font!("bold 8px monospace");
-        canvas_text!("DP", can_x + 4.0, can_y + 20.0);
-
-        // HUD
-        canvas_fill_style!("#eee");
-        canvas_font!("16px monospace");
-        canvas_text!("Score: " + to_string!(score), 10.0, 24.0);
-        canvas_text!("Lives: " + to_string!(lives), 310.0, 24.0);
-    });
-
-    // --- Game-over scene ---
-    scene_register!("end", fn() {
-        canvas_clear!();
-        canvas_fill_style!("#1a1a2e");
-        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
-
+    if lv <= 0 {
         canvas_fill_style!("#e94560");
         canvas_font!("bold 28px monospace");
         canvas_text!("GAME OVER", 85.0, 220.0);
-
         canvas_fill_style!("#eee");
         canvas_font!("20px monospace");
-        canvas_text!("Final Score: " + to_string!(score), 100.0, 270.0);
-    });
+        canvas_text!("Score: {sc}", 130.0, 270.0);
+    }
 
-    game_run!();
+    canvas_fill_style!("#e94560");
+    canvas_fill_rect!(px, 460.0, 60.0, 14.0);
+
+    canvas_fill_style!("#8b0000");
+    canvas_fill_rect!(dx, dy, 24.0, 32.0);
+    canvas_fill_style!("#fff");
+    canvas_font!("bold 8px monospace");
+    canvas_text!("DP", dx + 4.0, dy + 20.0);
+
+    canvas_fill_style!("#eee");
+    canvas_font!("16px monospace");
+    canvas_text!("Score: {sc}", 10.0, 24.0);
+    canvas_text!("Lives: {lv}", 310.0, 24.0);
+}
+
+fn main() with IO {
+    canvas_size!(400, 500);
+    audio_init!();
+    println!("Mini Game — Arrow keys or mouse/touch!");
+    canvas_animate!(frame);
 }
