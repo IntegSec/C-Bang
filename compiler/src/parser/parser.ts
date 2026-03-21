@@ -661,10 +661,11 @@ export class Parser {
     const path: string[] = [];
     path.push(this.expectPathSegment("Expected module path"));
 
-    while (this.check(TokenType.ColonColon)) {
+    // Accept both '::' and '.' as path separators (e.g. use game.state.* or use game::state::*)
+    while (this.check(TokenType.ColonColon) || this.check(TokenType.Dot)) {
       this.advance();
 
-      // use foo::*
+      // use foo::* or use foo.*
       if (this.check(TokenType.Star)) {
         this.advance();
         this.match(TokenType.Semicolon);
@@ -677,7 +678,7 @@ export class Parser {
         };
       }
 
-      // use foo::{A, B, C}
+      // use foo::{A, B, C} or use foo.{A, B, C}
       if (this.check(TokenType.LeftBrace)) {
         this.advance();
         const items: UseDecl['items'] = [];

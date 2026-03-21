@@ -18,14 +18,15 @@
  *   cbang --help              Show help
  */
 
-import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
-import { resolve, basename, join } from 'node:path';
+import { readFileSync, writeFileSync, unlinkSync, existsSync } from 'node:fs';
+import { resolve, basename, join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { Lexer, TokenType, Parser, formatDiagnostic, createError, VERSION } from './index.js';
 import { Resolver } from './semantic/index.js';
 import { Checker, OwnershipChecker, RefinementChecker, IntentChecker, EffectChecker } from './checker/index.js';
+import type { Program, TopLevelItem } from './ast/index.js';
 
 function main(): void {
   const args = process.argv.slice(2);
@@ -273,9 +274,22 @@ function checkCommand(filePath: string): void {
   console.log(`✓ Effect checking passed`);
 }
 
-async function compile(filePath: string): Promise<string> {
-  const source = readSource(filePath);
-  const lexer = new Lexer(source, filePath);
+// ─── Multi-file bundler ──────────────────────────────────────────────────────
+
+/**
+ * Parse a single .cb file and return its program AST.
+ * Returns null if the file cannot be read or has lex errors.
+ */
+function parseFile(filePath: string): Program | null {
+  const resolved = resolve(filePath);
+  let source: string;
+  try {
+    source = readFileSync(resolved, 'utf-8');
+  } catch {
+    return null;
+  }
+
+  const lexer = new Lexer(source, resolved);
   const tokens = lexer.tokenize();
 
   const lexErrors = tokens.filter(t => t.type === TokenType.Error);
@@ -284,7 +298,7 @@ async function compile(filePath: string): Promise<string> {
       const diag = createError('L001', `Unexpected character '${err.value}'`, err.span);
       console.error(formatDiagnostic(diag, source));
     }
-    process.exit(1);
+    return null;
   }
 
   const parser = new Parser(tokens);
@@ -294,13 +308,133 @@ async function compile(filePath: string): Promise<string> {
     for (const d of diagnostics) {
       console.error(formatDiagnostic(d, source));
     }
-    process.exit(1);
+    // Continue despite parse errors — we still have a partial AST
   }
+
+  return program;
+}
+
+/**
+ * Resolve a use declaration's path to a .cb file path.
+ *
+ * Supports two styles:
+ *   - dot-style:  use game.state.*  → <root>/game/state.cb
+ *   - rust-style: use crate::game::state::* → <root>/game/state.cb (strips leading "crate")
+ *
+ * @param usePath - The path segments from UseDecl (e.g. ['game', 'state'])
+ * @param projectRoot - The root directory containing the source tree
+ * @returns The resolved .cb file path, or null if not found
+ */
+function resolveUsePath(usePath: string[], projectRoot: string): string | null {
+  // Strip leading 'crate' if present (Rust-style paths)
+  const segments = usePath[0] === 'crate' ? usePath.slice(1) : [...usePath];
+
+  if (segments.length === 0) return null;
+
+  // Try the path as-is: game/state.cb
+  const filePath = join(projectRoot, ...segments) + '.cb';
+  if (existsSync(filePath)) return filePath;
+
+  // Also try interpreting the last segment as a directory with an index-like file
+  // (not common in C!, but let's be thorough)
+  return null;
+}
+
+/**
+ * Recursively resolve all `use` declarations starting from a main file.
+ * Returns a merged Program with all declarations from all files.
+ */
+function bundleFiles(mainFilePath: string): Program {
+  const resolvedMain = resolve(mainFilePath);
+  const projectRoot = dirname(resolvedMain);
+
+  const parsed = new Map<string, Program>();    // file path → AST
+  const queue: string[] = [resolvedMain];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const normalized = resolve(current);
+
+    if (parsed.has(normalized)) continue;
+
+    const program = parseFile(normalized);
+    if (!program) {
+      console.error(`Warning: could not parse '${normalized}', skipping`);
+      // Mark as visited so we don't retry
+      parsed.set(normalized, { kind: 'Program', items: [], span: { start: { line: 0, column: 0, offset: 0 }, end: { line: 0, column: 0, offset: 0 }, file: normalized } });
+      continue;
+    }
+
+    parsed.set(normalized, program);
+
+    // Find all UseDecl items and resolve them to files
+    for (const item of program.items) {
+      if (item.kind !== 'UseDecl') continue;
+
+      const resolved = resolveUsePath(item.path, projectRoot);
+      if (resolved) {
+        const normalizedResolved = resolve(resolved);
+        if (!parsed.has(normalizedResolved)) {
+          queue.push(normalizedResolved);
+        }
+      } else {
+        // Print a warning for unresolved use declarations (could be stdlib)
+        const pathStr = item.path.join('.');
+        console.error(`Warning: could not resolve 'use ${pathStr}' to a file, skipping`);
+      }
+    }
+  }
+
+  // Merge all programs: collect all non-UseDecl items from all files,
+  // with the main file's items last (so its main() is at the end)
+  const allItems: TopLevelItem[] = [];
+  const mainProgram = parsed.get(resolvedMain);
+
+  for (const [filePath, program] of parsed) {
+    if (filePath === resolvedMain) continue;
+    // Include all items except UseDecl (which have been resolved)
+    for (const item of program.items) {
+      if (item.kind !== 'UseDecl') {
+        allItems.push(item);
+      }
+    }
+  }
+
+  // Add main file items last
+  if (mainProgram) {
+    for (const item of mainProgram.items) {
+      if (item.kind !== 'UseDecl') {
+        allItems.push(item);
+      }
+    }
+  }
+
+  const mergedSpan = mainProgram?.span ?? { start: { line: 0, column: 0, offset: 0 }, end: { line: 0, column: 0, offset: 0 }, file: resolvedMain };
+
+  const merged: Program = {
+    kind: 'Program',
+    items: allItems,
+    span: mergedSpan,
+  };
+
+  const fileCount = parsed.size;
+  if (fileCount > 1) {
+    console.error(`Bundled ${fileCount} files (${allItems.length} declarations)`);
+  }
+
+  return merged;
+}
+
+async function compile(filePath: string): Promise<string> {
+  // Bundle all files referenced via use declarations
+  const program = bundleFiles(filePath);
 
   const resolver = new Resolver();
   const nameDiags = resolver.resolve(program);
 
   if (nameDiags.length > 0) {
+    // Collect source text for diagnostics — use the span's file if available
+    const source = readSource(filePath);
     for (const d of nameDiags) {
       console.error(formatDiagnostic(d, source));
     }
@@ -311,6 +445,7 @@ async function compile(filePath: string): Promise<string> {
   const typeDiags = checker.check(program);
 
   if (typeDiags.length > 0) {
+    const source = readSource(filePath);
     for (const d of typeDiags) {
       console.error(formatDiagnostic(d, source));
     }
@@ -321,6 +456,7 @@ async function compile(filePath: string): Promise<string> {
   const ownerDiags = ownershipChecker.check(program);
 
   if (ownerDiags.length > 0) {
+    const source = readSource(filePath);
     for (const d of ownerDiags) {
       console.error(formatDiagnostic(d, source));
     }
@@ -332,6 +468,7 @@ async function compile(filePath: string): Promise<string> {
 
   const refineErrors = refineDiags.filter(d => d.severity === 'error');
   if (refineErrors.length > 0) {
+    const source = readSource(filePath);
     for (const d of refineErrors) {
       console.error(formatDiagnostic(d, source));
     }
@@ -343,6 +480,7 @@ async function compile(filePath: string): Promise<string> {
 
   const intentErrors = intentDiags.filter(d => d.severity === 'error');
   if (intentErrors.length > 0) {
+    const source = readSource(filePath);
     for (const d of intentErrors) {
       console.error(formatDiagnostic(d, source));
     }
@@ -354,6 +492,7 @@ async function compile(filePath: string): Promise<string> {
 
   const effectErrors = effectDiags.filter(d => d.severity === 'error');
   if (effectErrors.length > 0) {
+    const source = readSource(filePath);
     for (const d of effectErrors) {
       console.error(formatDiagnostic(d, source));
     }
