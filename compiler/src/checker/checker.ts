@@ -13,6 +13,7 @@ import type {
   TopLevelItem,
   FunctionDecl,
   TypeDecl,
+  StateDecl,
   Block,
   Stmt,
   Expr,
@@ -70,6 +71,9 @@ export class Checker {
       case 'FunctionDecl':
         this.registerFunction(item);
         break;
+      case 'StateDecl':
+        this.registerState(item);
+        break;
       // Phase 1 skips: actors, contracts, servers, components, use, mod
       case 'ActorDecl':
       case 'ContractDecl':
@@ -77,7 +81,6 @@ export class Checker {
       case 'ComponentDecl':
       case 'UseDecl':
       case 'ModDecl':
-      case 'StateDecl':
         break;
     }
   }
@@ -134,6 +137,15 @@ export class Checker {
       : { kind: 'Unit' };
 
     this.env.define(decl.name, { kind: 'Function', params, ret });
+  }
+
+  private registerState(decl: StateDecl): void {
+    if (this.env.lookup(decl.name) !== undefined) {
+      this.error(`State variable '${decl.name}' is already defined`, decl.span);
+      return;
+    }
+    const type = this.resolveTypeExpr(decl.typeAnnotation);
+    this.env.define(decl.name, type);
   }
 
   // ─── Pass 2: Body checking ────────────────────────────────────────

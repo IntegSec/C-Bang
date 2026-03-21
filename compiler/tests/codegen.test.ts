@@ -1018,4 +1018,25 @@ function early_exit() {
       expect(js).toContain('(function __animLoop() { draw(); requestAnimationFrame(__animLoop); })()');
     });
   });
+
+  // ─── State declarations ─────────────────────────────────────────
+
+  describe('state declarations', () => {
+    it('generates top-level let for state', () => {
+      const js = generate('state x: f64 = 0.0\nfn main() { x = x + 1.0; }');
+      expect(js).toContain('let x = 0');
+      expect(js).toContain('x = x + 1');
+    });
+
+    it('state is accessible from multiple functions', () => {
+      const js = generate('state count: i32 = 0\nfn inc() { count = count + 1; }\nfn get() -> i32 { count }');
+      expect(js).toContain('let count = 0');
+    });
+
+    it('supports multiple state declarations', () => {
+      const js = generate('state a: f64 = 1.0\nstate b: f64 = 2.0\nfn main() { a = b; }');
+      expect(js).toContain('let a = 1');
+      expect(js).toContain('let b = 2');
+    });
+  });
 });
