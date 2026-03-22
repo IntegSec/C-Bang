@@ -25,13 +25,25 @@ var __input = (function() {
   });
 
   var canvas = document.getElementById('c') || document.querySelector('canvas') || document.body;
+
+  // Scale client coordinates to canvas logical coordinates (handles CSS scaling)
+  function scaleCoords(clientX, clientY) {
+    var rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: canvas.width, height: canvas.height };
+    var scaleX = canvas.width / (rect.width || canvas.width);
+    var scaleY = canvas.height / (rect.height || canvas.height);
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  }
+
   canvas.addEventListener('mousemove', function(e) {
-    var rect = (canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 });
-    mouseState.x = e.clientX - rect.left;
-    mouseState.y = e.clientY - rect.top;
+    var p = scaleCoords(e.clientX, e.clientY);
+    mouseState.x = p.x;
+    mouseState.y = p.y;
     for (var i = 0; i < callbacks.mousemove.length; i++) callbacks.mousemove[i](mouseState.x, mouseState.y);
   });
   canvas.addEventListener('mousedown', function(e) {
+    var p = scaleCoords(e.clientX, e.clientY);
+    mouseState.x = p.x;
+    mouseState.y = p.y;
     mouseState.down = true;
     mouseState.justClicked = true;
     for (var i = 0; i < callbacks.mouseclick.length; i++) callbacks.mouseclick[i](mouseState.x, mouseState.y);
@@ -43,25 +55,36 @@ var __input = (function() {
     touchState.active = true;
     touchState.count = e.touches.length;
     if (e.touches.length > 0) {
-      var rect = (canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 });
-      touchState.x = e.touches[0].clientX - rect.left;
-      touchState.y = e.touches[0].clientY - rect.top;
+      var p = scaleCoords(e.touches[0].clientX, e.touches[0].clientY);
+      touchState.x = p.x;
+      touchState.y = p.y;
+      // Touch also triggers mouse click (for menu buttons etc)
+      mouseState.x = p.x;
+      mouseState.y = p.y;
+      mouseState.down = true;
+      mouseState.justClicked = true;
     }
     for (var i = 0; i < callbacks.touchstart.length; i++) callbacks.touchstart[i](touchState.x, touchState.y);
+    for (var i = 0; i < callbacks.mouseclick.length; i++) callbacks.mouseclick[i](mouseState.x, mouseState.y);
   }, { passive: false });
   canvas.addEventListener('touchmove', function(e) {
     e.preventDefault();
     touchState.count = e.touches.length;
     if (e.touches.length > 0) {
-      var rect = (canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 });
-      touchState.x = e.touches[0].clientX - rect.left;
-      touchState.y = e.touches[0].clientY - rect.top;
+      var p = scaleCoords(e.touches[0].clientX, e.touches[0].clientY);
+      touchState.x = p.x;
+      touchState.y = p.y;
+      mouseState.x = p.x;
+      mouseState.y = p.y;
     }
     for (var i = 0; i < callbacks.touchmove.length; i++) callbacks.touchmove[i](touchState.x, touchState.y);
   }, { passive: false });
   canvas.addEventListener('touchend', function(e) {
     touchState.count = e.touches.length;
-    if (e.touches.length === 0) touchState.active = false;
+    if (e.touches.length === 0) {
+      touchState.active = false;
+      mouseState.down = false;
+    }
     for (var i = 0; i < callbacks.touchend.length; i++) callbacks.touchend[i]();
   });
 
