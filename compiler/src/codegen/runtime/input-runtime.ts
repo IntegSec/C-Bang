@@ -13,10 +13,11 @@ var __input = (function() {
   var callbacks = { keydown: [], keyup: [], mousemove: [], mouseclick: [], touchstart: [], touchmove: [], touchend: [] };
 
   document.addEventListener('keydown', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     if (!keys[e.key]) justPressed[e.key] = true;
     keys[e.key] = true;
     for (var i = 0; i < callbacks.keydown.length; i++) callbacks.keydown[i](e.key);
-    e.preventDefault();
+    if (e.key !== 'F5' && e.key !== 'F12') e.preventDefault();
   });
   document.addEventListener('keyup', function(e) {
     keys[e.key] = false;
