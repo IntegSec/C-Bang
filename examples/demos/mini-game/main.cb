@@ -1,77 +1,2736 @@
-// main.cb — Mini Catch Game
-// Catch falling Dr Pepper drops! Arrow keys, mouse, or touch to move.
+// Dr Pepper: Catch the Drop — FINAL POLISHED VERSION
+// Addiction-engineered with variable ratio reinforcement, near-miss psychology,
+// combo escalation, progress bars, juicy feedback, and social proof
 
-state px: f64 = 170.0
-state dy: f64 = -20.0
-state dx: f64 = 180.0
-state sc: i32 = 0
-state lv: i32 = 3
-state sp: f64 = 140.0
-state over: bool = false
+// --- Player (Dr Pepper can) ---
+state px: f64 = 165.0
+state pw: f64 = 70.0
+state ph: f64 = 90.0
+state py: f64 = 400.0
+state pspeed: f64 = 450.0
+state frozen: bool = false
+state freeze_timer: f64 = 0.0
+state wide_timer: f64 = 0.0
+
+// --- Drops (4 simultaneous) ---
+state d_x0: f64 = 80.0
+state d_y0: f64 = 20.0
+state d_v0: f64 = 1.0
+state d_wobble0: f64 = 0.0
+state d_x1: f64 = 180.0
+state d_y1: f64 = 120.0
+state d_v1: f64 = 1.0
+state d_wobble1: f64 = 1.0
+state d_x2: f64 = 280.0
+state d_y2: f64 = 220.0
+state d_v2: f64 = 2.0
+state d_wobble2: f64 = 2.0
+state d_x3: f64 = 50.0
+state d_y3: f64 = 320.0
+state d_v3: f64 = 1.0
+state d_wobble3: f64 = 3.0
+
+// --- Obstacles ---
+state obs_x: f64 = 200.0
+state obs_y: f64 = -500.0
+state obs_active: bool = false
+state obs_type: f64 = 0.0
+
+// --- Power-ups ---
+state pow_x: f64 = 150.0
+state pow_y: f64 = -800.0
+state pow_active: bool = false
+state pow_type: f64 = 0.0
+state pow_spin: f64 = 0.0
+
+// --- Game state ---
+state score: f64 = 0.0
+state combo: f64 = 0.0
+state combo_timer: f64 = 0.0
+state max_combo: f64 = 0.0
+state fill: f64 = 10.0
+state lives: f64 = 5.0
+state level: f64 = 1.0
+state drop_speed: f64 = 180.0
+state anim_time: f64 = 0.0
+state best_score: f64 = 0.0
+state catches_total: f64 = 0.0
+state level_timer: f64 = 30.0
+
+// --- Game states: 0=menu, 1=playing, 2=paused, 3=gameover, 4=levelcomplete ---
+state game_state: f64 = 0.0
+state go_delay: f64 = 0.0
+
+// --- Pepper Rush ---
+state pepper_rush: bool = false
+state rush_timer: f64 = 0.0
+state shield: bool = false
+
+// --- FRENZY EVENT (periodic gold/white storm) ---
+state frenzy_active: bool = false
+state frenzy_timer: f64 = 0.0
+state frenzy_cooldown: f64 = 30.0
+state frenzy_speed_mult: f64 = 1.0
+// Frenzy particles (12 golden/white falling particles)
+state fp_x0: f64 = 0.0
+state fp_y0: f64 = 0.0
+state fp_s0: f64 = 0.0
+state fp_x1: f64 = 0.0
+state fp_y1: f64 = 0.0
+state fp_s1: f64 = 0.0
+state fp_x2: f64 = 0.0
+state fp_y2: f64 = 0.0
+state fp_s2: f64 = 0.0
+state fp_x3: f64 = 0.0
+state fp_y3: f64 = 0.0
+state fp_s3: f64 = 0.0
+state fp_x4: f64 = 0.0
+state fp_y4: f64 = 0.0
+state fp_s4: f64 = 0.0
+state fp_x5: f64 = 0.0
+state fp_y5: f64 = 0.0
+state fp_s5: f64 = 0.0
+state fp_x6: f64 = 0.0
+state fp_y6: f64 = 0.0
+state fp_s6: f64 = 0.0
+state fp_x7: f64 = 0.0
+state fp_y7: f64 = 0.0
+state fp_s7: f64 = 0.0
+state fp_x8: f64 = 0.0
+state fp_y8: f64 = 0.0
+state fp_s8: f64 = 0.0
+state fp_x9: f64 = 0.0
+state fp_y9: f64 = 0.0
+state fp_s9: f64 = 0.0
+state fp_x10: f64 = 0.0
+state fp_y10: f64 = 0.0
+state fp_s10: f64 = 0.0
+state fp_x11: f64 = 0.0
+state fp_y11: f64 = 0.0
+state fp_s11: f64 = 0.0
+
+// --- Near miss ---
+state near_miss_timer: f64 = 0.0
+state near_miss_x: f64 = 0.0
+
+// --- Combo broken ---
+state combo_broken_timer: f64 = 0.0
+state combo_broken_val: f64 = 0.0
+
+// --- Splash particles (8 particles) ---
+state sp_active: bool = false
+state sp_timer: f64 = 0.0
+state sp_x: f64 = 0.0
+state sp_y: f64 = 0.0
+state sp_dx0: f64 = 0.0
+state sp_dy0: f64 = 0.0
+state sp_dx1: f64 = 0.0
+state sp_dy1: f64 = 0.0
+state sp_dx2: f64 = 0.0
+state sp_dy2: f64 = 0.0
+state sp_dx3: f64 = 0.0
+state sp_dy3: f64 = 0.0
+state sp_dx4: f64 = 0.0
+state sp_dy4: f64 = 0.0
+state sp_dx5: f64 = 0.0
+state sp_dy5: f64 = 0.0
+state sp_dx6: f64 = 0.0
+state sp_dy6: f64 = 0.0
+state sp_dx7: f64 = 0.0
+state sp_dy7: f64 = 0.0
+state sp_color: String = "#8b0000"
+
+// --- Screen shake ---
+state shake: f64 = 0.0
+
+// --- Combo display ---
+state combo_scale: f64 = 1.0
+
+// --- Floating score text ---
+state float_score_val: f64 = 0.0
+state float_score_x: f64 = 0.0
+state float_score_y: f64 = 0.0
+state float_score_timer: f64 = 0.0
+
+// --- Jackpot flash ---
+state jackpot_timer: f64 = 0.0
+state lucky_timer: f64 = 0.0
+
+// --- Bonus event ---
+state bonus_timer: f64 = 0.0
+state bonus_type: f64 = 0.0
+state double_pts_timer: f64 = 0.0
+
+// --- Danger pulse ---
+state danger_pulse: f64 = 0.0
+
+// --- Social proof ---
+state fake_catches: f64 = 47382.0
+
+// --- Stars (12 positions) ---
+state star_x0: f64 = 45.0
+state star_y0: f64 = 30.0
+state star_x1: f64 = 120.0
+state star_y1: f64 = 80.0
+state star_x2: f64 = 230.0
+state star_y2: f64 = 45.0
+state star_x3: f64 = 310.0
+state star_y3: f64 = 110.0
+state star_x4: f64 = 70.0
+state star_y4: f64 = 160.0
+state star_x5: f64 = 350.0
+state star_y5: f64 = 60.0
+state star_x6: f64 = 25.0
+state star_y6: f64 = 250.0
+state star_x7: f64 = 280.0
+state star_y7: f64 = 200.0
+state star_x8: f64 = 160.0
+state star_y8: f64 = 290.0
+state star_x9: f64 = 95.0
+state star_y9: f64 = 350.0
+state star_x10: f64 = 340.0
+state star_y10: f64 = 310.0
+state star_x11: f64 = 200.0
+state star_y11: f64 = 380.0
+
+// --- Menu / Style ---
+state muted: bool = false
+state style_sel: f64 = 0.0
+state level_complete_timer: f64 = 0.0
+state level_stars: f64 = 0.0
+state level_fill_snap: f64 = 0.0
+state audio_started: bool = false
+state powerup_flash_timer: f64 = 0.0
+state powerup_flash_color: String = "#ffffff"
+state xp_bar: f64 = 0.0
+
+// --- Weapons System ---
+// weapon_type: 0=laser, 1=spread, 2=mega, 3=freeze, 4=shield
+state weapon_type: f64 = 0.0
+state weapon_timer: f64 = 0.0
+state fire_cooldown: f64 = 0.0
+state frozen_drops: bool = false
+state frozen_drop_timer: f64 = 0.0
+state shield_burst: bool = false
+state shield_burst_timer: f64 = 0.0
+state shield_burst_radius: f64 = 0.0
+state freeze_shot_used: bool = false
+
+// Laser projectiles (3 slots)
+state l_x0: f64 = 0.0
+state l_y0: f64 = -50.0
+state l_active0: bool = false
+state l_ang0: f64 = 0.0
+state l_x1: f64 = 0.0
+state l_y1: f64 = -50.0
+state l_active1: bool = false
+state l_ang1: f64 = 0.0
+state l_x2: f64 = 0.0
+state l_y2: f64 = -50.0
+state l_active2: bool = false
+state l_ang2: f64 = 0.0
+
+// Mega blast
+state mb_x: f64 = 0.0
+state mb_y: f64 = -50.0
+state mb_active: bool = false
+state mb_radius: f64 = 20.0
+
+// Weapon pickup
+state wp_x: f64 = 0.0
+state wp_y: f64 = -1000.0
+state wp_active: bool = false
+state wp_type: f64 = 0.0
+state wp_spawn_timer: f64 = 15.0
+state wp_spin: f64 = 0.0
+
+// Hit explosion particles (6 particles)
+state hit_active: bool = false
+state hit_timer: f64 = 0.0
+state hit_x: f64 = 0.0
+state hit_y: f64 = 0.0
+state hit_dx0: f64 = 0.0
+state hit_dy0: f64 = 0.0
+state hit_dx1: f64 = 0.0
+state hit_dy1: f64 = 0.0
+state hit_dx2: f64 = 0.0
+state hit_dy2: f64 = 0.0
+state hit_dx3: f64 = 0.0
+state hit_dy3: f64 = 0.0
+state hit_dx4: f64 = 0.0
+state hit_dy4: f64 = 0.0
+state hit_dx5: f64 = 0.0
+state hit_dy5: f64 = 0.0
+
+// Freeze screen tint
+state freeze_tint_timer: f64 = 0.0
+
+// --- Notification queue (4 slots) ---
+state notif0_text: String = ""
+state notif0_timer: f64 = 0.0
+state notif0_color: String = "#fff"
+state notif1_text: String = ""
+state notif1_timer: f64 = 0.0
+state notif1_color: String = "#fff"
+state notif2_text: String = ""
+state notif2_timer: f64 = 0.0
+state notif2_color: String = "#fff"
+state notif3_text: String = ""
+state notif3_timer: f64 = 0.0
+state notif3_color: String = "#fff"
+
+fn random_x() -> f64 {
+    return math_floor!(math_random!() * 340.0) + 20.0
+}
+
+fn random_value() -> f64 {
+    let r: f64 = math_random!();
+    if r < 0.02 { return 10.0; }
+    if r < 0.10 { return 5.0; }
+    if r < 0.30 { return 2.0; }
+    return 1.0;
+}
+
+fn drop_color(v: f64) -> String {
+    if v == 10.0 { return "#ffd700"; }
+    if v == 5.0 { return "#ff6b35"; }
+    if v == 2.0 { return "#c0392b"; }
+    return "#8b0000";
+}
+
+fn combo_multiplier() -> f64 {
+    if combo >= 20.0 { return 5.0; }
+    if combo >= 10.0 { return 3.0; }
+    if combo >= 5.0 { return 2.0; }
+    return 1.0;
+}
+
+fn abs_val(x: f64) -> f64 {
+    if x < 0.0 { return 0.0 - x; }
+    return x;
+}
+
+fn push_notif(text: String, color: String, duration: f64) {
+    if notif0_timer <= 0.0 {
+        notif0_text = text;
+        notif0_color = color;
+        notif0_timer = duration;
+        return;
+    }
+    if notif1_timer <= 0.0 {
+        notif1_text = text;
+        notif1_color = color;
+        notif1_timer = duration;
+        return;
+    }
+    if notif2_timer <= 0.0 {
+        notif2_text = text;
+        notif2_color = color;
+        notif2_timer = duration;
+        return;
+    }
+    if notif3_timer <= 0.0 {
+        notif3_text = text;
+        notif3_color = color;
+        notif3_timer = duration;
+        return;
+    }
+    // All slots full, overwrite slot 3
+    notif3_text = text;
+    notif3_color = color;
+    notif3_timer = duration;
+}
+
+fn draw_notifications(dt: f64) {
+    // Slot 0 at y=60, font 16px
+    if notif0_timer > 0.0 {
+        notif0_timer = notif0_timer - dt;
+        canvas_fill_style!(notif0_color);
+        canvas_font!("bold 16px Arial");
+        canvas_text!(notif0_text, 120.0, 60.0);
+        if notif0_timer <= 0.0 {
+            notif0_timer = 0.0;
+            notif0_text = "";
+        }
+    }
+    // Slot 1 at y=85, font 14px
+    if notif1_timer > 0.0 {
+        notif1_timer = notif1_timer - dt;
+        canvas_fill_style!(notif1_color);
+        canvas_font!("bold 14px Arial");
+        canvas_text!(notif1_text, 120.0, 85.0);
+        if notif1_timer <= 0.0 {
+            notif1_timer = 0.0;
+            notif1_text = "";
+        }
+    }
+    // Slot 2 at y=110, font 13px
+    if notif2_timer > 0.0 {
+        notif2_timer = notif2_timer - dt;
+        canvas_fill_style!(notif2_color);
+        canvas_font!("bold 13px Arial");
+        canvas_text!(notif2_text, 120.0, 110.0);
+        if notif2_timer <= 0.0 {
+            notif2_timer = 0.0;
+            notif2_text = "";
+        }
+    }
+    // Slot 3 at y=135, font 12px
+    if notif3_timer > 0.0 {
+        notif3_timer = notif3_timer - dt;
+        canvas_fill_style!(notif3_color);
+        canvas_font!("bold 12px Arial");
+        canvas_text!(notif3_text, 120.0, 135.0);
+        if notif3_timer <= 0.0 {
+            notif3_timer = 0.0;
+            notif3_text = "";
+        }
+    }
+}
+
+fn spawn_splash(sx: f64, sy: f64, col: String) {
+    sp_active = true;
+    sp_timer = 0.6;
+    sp_x = sx;
+    sp_y = sy;
+    sp_color = col;
+    sp_dx0 = (math_random!() - 0.5) * 250.0;
+    sp_dy0 = 0.0 - math_random!() * 300.0;
+    sp_dx1 = (math_random!() - 0.5) * 250.0;
+    sp_dy1 = 0.0 - math_random!() * 300.0;
+    sp_dx2 = (math_random!() - 0.5) * 250.0;
+    sp_dy2 = 0.0 - math_random!() * 300.0;
+    sp_dx3 = (math_random!() - 0.5) * 250.0;
+    sp_dy3 = 0.0 - math_random!() * 300.0;
+    sp_dx4 = (math_random!() - 0.5) * 250.0;
+    sp_dy4 = 0.0 - math_random!() * 300.0;
+    sp_dx5 = (math_random!() - 0.5) * 250.0;
+    sp_dy5 = 0.0 - math_random!() * 300.0;
+    sp_dx6 = (math_random!() - 0.5) * 250.0;
+    sp_dy6 = 0.0 - math_random!() * 300.0;
+    sp_dx7 = (math_random!() - 0.5) * 250.0;
+    sp_dy7 = 0.0 - math_random!() * 300.0;
+}
+
+fn spawn_hit_explosion(hx: f64, hy: f64) {
+    hit_active = true;
+    hit_timer = 0.4;
+    hit_x = hx;
+    hit_y = hy;
+    hit_dx0 = (math_random!() - 0.5) * 300.0;
+    hit_dy0 = (math_random!() - 0.5) * 300.0;
+    hit_dx1 = (math_random!() - 0.5) * 300.0;
+    hit_dy1 = (math_random!() - 0.5) * 300.0;
+    hit_dx2 = (math_random!() - 0.5) * 300.0;
+    hit_dy2 = (math_random!() - 0.5) * 300.0;
+    hit_dx3 = (math_random!() - 0.5) * 300.0;
+    hit_dy3 = (math_random!() - 0.5) * 300.0;
+    hit_dx4 = (math_random!() - 0.5) * 300.0;
+    hit_dy4 = (math_random!() - 0.5) * 300.0;
+    hit_dx5 = (math_random!() - 0.5) * 300.0;
+    hit_dy5 = (math_random!() - 0.5) * 300.0;
+}
+
+fn draw_hit_explosion() {
+    if hit_active == false { return; }
+    let life: f64 = hit_timer / 0.4;
+    let t: f64 = 0.4 - hit_timer;
+    let psize: f64 = 4.0 * life + 0.5;
+    // Bright flash at center
+    if t < 0.1 {
+        canvas_fill_style!("rgba(255,255,200,0.8)");
+        canvas_circle!(hit_x, hit_y, 12.0 * life);
+    }
+    canvas_fill_style!("rgba(255,100,50,0.8)");
+    canvas_circle!(hit_x + hit_dx0 * t, hit_y + hit_dy0 * t, psize);
+    canvas_circle!(hit_x + hit_dx1 * t, hit_y + hit_dy1 * t, psize * 0.8);
+    canvas_circle!(hit_x + hit_dx2 * t, hit_y + hit_dy2 * t, psize);
+    canvas_fill_style!("rgba(255,200,50,0.7)");
+    canvas_circle!(hit_x + hit_dx3 * t, hit_y + hit_dy3 * t, psize * 0.7);
+    canvas_circle!(hit_x + hit_dx4 * t, hit_y + hit_dy4 * t, psize * 0.9);
+    canvas_circle!(hit_x + hit_dx5 * t, hit_y + hit_dy5 * t, psize * 0.6);
+}
+
+fn weapon_name(wt: f64) -> String {
+    if wt == 1.0 { return "SPREAD"; }
+    if wt == 2.0 { return "MEGA BLAST"; }
+    if wt == 3.0 { return "FREEZE RAY"; }
+    if wt == 4.0 { return "SHIELD BURST"; }
+    return "LASER";
+}
+
+fn weapon_color(wt: f64) -> String {
+    if wt == 1.0 { return "#00ffff"; }
+    if wt == 2.0 { return "#ffff00"; }
+    if wt == 3.0 { return "#4488ff"; }
+    if wt == 4.0 { return "#44ff44"; }
+    return "#ff3333";
+}
+
+fn weapon_letter(wt: f64) -> String {
+    if wt == 1.0 { return "3"; }
+    if wt == 2.0 { return "B"; }
+    if wt == 3.0 { return "F"; }
+    if wt == 4.0 { return "S"; }
+    return "L";
+}
+
+fn draw_weapon_pickup(wpx: f64, wpy: f64, wtype: f64, wspin: f64) {
+    let size: f64 = 28.0;
+    let wcx: f64 = wpx + size / 2.0;
+    let wcy: f64 = wpy + size / 2.0;
+    // Glow
+    canvas_fill_style!("rgba(0,255,255,0.2)");
+    canvas_circle!(wcx, wcy, size * 0.9);
+    canvas_save!();
+    canvas_translate!(wcx, wcy);
+    canvas_rotate!(wspin);
+    // Diamond shape
+    canvas_begin_path!();
+    canvas_move_to!(0.0, -14.0);
+    canvas_line_to!(14.0, 0.0);
+    canvas_line_to!(0.0, 14.0);
+    canvas_line_to!(-14.0, 0.0);
+    canvas_close_path!();
+    canvas_fill_style!("#00ffff");
+    canvas_fill!();
+    // Inner circle with letter
+    canvas_fill_style!("#003333");
+    canvas_circle!(0.0, 0.0, 7.0);
+    let mut wletter: String = weapon_letter(wtype + 1.0);
+    let mut wcolor: String = weapon_color(wtype + 1.0);
+    canvas_fill_style!(wcolor);
+    canvas_font!("bold 10px Arial");
+    canvas_text!(wletter, -4.0, 4.0);
+    canvas_restore!();
+}
+
+fn draw_laser_beam(lx: f64, ly: f64, lang: f64) {
+    // Glow (wider, semi-transparent)
+    canvas_fill_style!("rgba(255,50,50,0.2)");
+    let glow_w: f64 = 10.0;
+    let beam_len: f64 = 20.0;
+    let dir_x: f64 = math_sin!(lang);
+    let dir_y: f64 = 0.0 - math_cos!(lang);
+    // Draw as a series of circles for the beam
+    canvas_circle!(lx, ly, 6.0);
+    canvas_circle!(lx + dir_x * 5.0, ly + dir_y * 5.0, 5.0);
+    canvas_circle!(lx - dir_x * 5.0, ly - dir_y * 5.0, 5.0);
+    // Core beam (bright red)
+    canvas_fill_style!("#ff3333");
+    canvas_circle!(lx, ly, 3.0);
+    canvas_circle!(lx + dir_x * 5.0, ly + dir_y * 5.0, 2.5);
+    canvas_circle!(lx - dir_x * 5.0, ly - dir_y * 5.0, 2.5);
+    // Bright center
+    canvas_fill_style!("#ff8888");
+    canvas_circle!(lx, ly, 1.5);
+}
+
+fn draw_mega_blast(mx: f64, my: f64, mr: f64) {
+    // Outer ring
+    canvas_fill_style!("rgba(255,255,0,0.15)");
+    canvas_circle!(mx, my, mr + 10.0);
+    // Pulsing body
+    canvas_fill_style!("rgba(255,200,0,0.7)");
+    canvas_circle!(mx, my, mr);
+    // Inner glow
+    canvas_fill_style!("rgba(255,255,200,0.8)");
+    canvas_circle!(mx, my, mr * 0.5);
+    // Core
+    canvas_fill_style!("#ffffff");
+    canvas_circle!(mx, my, mr * 0.2);
+}
+
+fn draw_shield_burst_ring(scx: f64, scy: f64, sr: f64) {
+    // Expanding ring effect using circles
+    let ring_alpha: f64 = 1.0 - sr / 150.0;
+    if ring_alpha > 0.0 {
+        canvas_stroke_style!("rgba(0,255,100,0.6)");
+        canvas_line_width!(3.0);
+        // Draw ring as stroke circle approximation with small filled circles
+        canvas_fill_style!("rgba(0,255,100,0.3)");
+        canvas_circle!(scx + sr, scy, 4.0);
+        canvas_circle!(scx - sr, scy, 4.0);
+        canvas_circle!(scx, scy + sr, 4.0);
+        canvas_circle!(scx, scy - sr, 4.0);
+        canvas_circle!(scx + sr * 0.707, scy + sr * 0.707, 4.0);
+        canvas_circle!(scx - sr * 0.707, scy + sr * 0.707, 4.0);
+        canvas_circle!(scx + sr * 0.707, scy - sr * 0.707, 4.0);
+        canvas_circle!(scx - sr * 0.707, scy - sr * 0.707, 4.0);
+        // Fill inside ring
+        canvas_fill_style!("rgba(0,255,100,0.05)");
+        canvas_circle!(scx, scy, sr);
+    }
+}
+
+fn draw_weapon_hud() {
+    // Bottom-left weapon info
+    canvas_fill_style!("rgba(0,0,0,0.6)");
+    canvas_fill_rect!(0.0, 460.0, 120.0, 30.0);
+    let wname: String = weapon_name(weapon_type);
+    let wcolor: String = weapon_color(weapon_type);
+    canvas_fill_style!(wcolor);
+    canvas_font!("bold 10px Arial");
+    canvas_text!(wname, 25.0, 478.0);
+    // Weapon icon (small colored square)
+    canvas_fill_style!(wcolor);
+    canvas_fill_rect!(5.0, 466.0, 16.0, 16.0);
+    canvas_fill_style!("#000000");
+    canvas_font!("bold 9px Arial");
+    let wletter: String = weapon_letter(weapon_type);
+    canvas_text!(wletter, 8.0, 478.0);
+    // Timer bar for temporary weapons
+    if weapon_type > 0.0 {
+        if weapon_timer > 0.0 {
+            let bar_pct: f64 = weapon_timer / 15.0;
+            canvas_fill_style!("rgba(255,255,255,0.2)");
+            canvas_fill_rect!(5.0, 484.0, 110.0, 4.0);
+            canvas_fill_style!(wcolor);
+            canvas_fill_rect!(5.0, 484.0, 110.0 * bar_pct, 4.0);
+        }
+    }
+}
+
+fn fire_laser(fx: f64, fy: f64, fang: f64) {
+    if l_active0 == false {
+        l_x0 = fx;
+        l_y0 = fy;
+        l_ang0 = fang;
+        l_active0 = true;
+        return;
+    }
+    if l_active1 == false {
+        l_x1 = fx;
+        l_y1 = fy;
+        l_ang1 = fang;
+        l_active1 = true;
+        return;
+    }
+    if l_active2 == false {
+        l_x2 = fx;
+        l_y2 = fy;
+        l_ang2 = fang;
+        l_active2 = true;
+        return;
+    }
+}
+
+fn check_laser_hit_drop(lx: f64, ly: f64, dx: f64, dy: f64) -> bool {
+    let mut dist_x: f64 = lx - dx;
+    let mut dist_y: f64 = ly - dy;
+    if dist_x < 0.0 { dist_x = 0.0 - dist_x; }
+    if dist_y < 0.0 { dist_y = 0.0 - dist_y; }
+    if dist_x < 15.0 {
+        if dist_y < 15.0 {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn check_mega_hit(mx: f64, my: f64, dx: f64, dy: f64) -> bool {
+    let mut dist_x: f64 = mx - dx;
+    let mut dist_y: f64 = my - dy;
+    if dist_x < 0.0 { dist_x = 0.0 - dist_x; }
+    if dist_y < 0.0 { dist_y = 0.0 - dist_y; }
+    if dist_x < 40.0 {
+        if dist_y < 40.0 {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn draw_teardrop(dx: f64, dy: f64, size: f64, color: String, is_golden: bool) {
+    let radius: f64 = size / 2.0;
+    if is_golden {
+        canvas_fill_style!("rgba(255,215,0,0.25)");
+        canvas_circle!(dx, dy + radius * 0.5, size * 1.5);
+        canvas_fill_style!("rgba(255,215,0,0.15)");
+        canvas_circle!(dx, dy + radius * 0.5, size * 2.2);
+    }
+    canvas_fill_style!(color);
+    canvas_circle!(dx, dy + radius, radius);
+    canvas_begin_path!();
+    canvas_move_to!(dx, dy - radius * 1.2);
+    canvas_line_to!(dx - radius, dy + radius * 0.3);
+    canvas_line_to!(dx + radius, dy + radius * 0.3);
+    canvas_close_path!();
+    canvas_fill!();
+    canvas_fill_style!("rgba(255,255,255,0.35)");
+    canvas_circle!(dx - radius * 0.25, dy + radius * 0.3, radius * 0.35);
+}
+
+fn draw_drop_trail(dx: f64, dy: f64, color: String) {
+    canvas_fill_style!("rgba(139,0,0,0.15)");
+    canvas_circle!(dx, dy - 12.0, 3.0);
+    canvas_fill_style!("rgba(139,0,0,0.08)");
+    canvas_circle!(dx, dy - 22.0, 2.5);
+    canvas_fill_style!("rgba(139,0,0,0.03)");
+    canvas_circle!(dx, dy - 30.0, 2.0);
+}
+
+fn draw_dr_pepper_can(cx: f64, cy: f64, cw: f64, ch: f64, is_frozen: bool, is_rush: bool, has_shield: bool) {
+    let half_w: f64 = cw / 2.0;
+    let center_x: f64 = cx + half_w;
+    let rim_h: f64 = 10.0;
+    let body_top: f64 = cy + rim_h;
+    let body_h: f64 = ch - rim_h - 8.0;
+    let bottom_y: f64 = cy + ch - 8.0;
+
+    // Shadow underneath the can
+    canvas_fill_style!("rgba(0,0,0,0.35)");
+    canvas_circle!(center_x, cy + ch + 3.0, half_w * 0.85);
+    canvas_fill_style!("rgba(0,0,0,0.15)");
+    canvas_circle!(center_x, cy + ch + 5.0, half_w * 1.1);
+
+    // Golden glow when pepper_rush
+    if is_rush {
+        canvas_fill_style!("rgba(255,215,0,0.15)");
+        canvas_circle!(center_x, cy + ch / 2.0, half_w * 2.0);
+        canvas_fill_style!("rgba(255,200,0,0.08)");
+        canvas_circle!(center_x, cy + ch / 2.0, half_w * 2.5);
+    }
+
+    // Bottom ellipse of cylinder
+    canvas_fill_style!("rgba(30,0,8,0.9)");
+    canvas_circle!(center_x, bottom_y + 2.0, half_w);
+
+    // Main body rectangle - dark maroon #4a0012
+    let mut body_base: String = "#4a0012";
+    if is_frozen { body_base = "#2a5a6e"; }
+    if is_rush { body_base = "#6e4a00"; }
+    canvas_fill_style!(body_base);
+    canvas_fill_rect!(cx, body_top, cw, body_h);
+
+    // Cylinder gradient effect: left edge lighter strip for 3D roundness
+    let mut highlight_left: String = "rgba(120,20,40,0.5)";
+    if is_frozen { highlight_left = "rgba(80,160,200,0.4)"; }
+    if is_rush { highlight_left = "rgba(200,170,50,0.4)"; }
+    canvas_fill_style!(highlight_left);
+    canvas_fill_rect!(cx, body_top, 8.0, body_h);
+
+    // Subtle second highlight strip
+    let mut highlight_left2: String = "rgba(150,40,60,0.3)";
+    if is_frozen { highlight_left2 = "rgba(100,190,220,0.25)"; }
+    if is_rush { highlight_left2 = "rgba(220,190,80,0.25)"; }
+    canvas_fill_style!(highlight_left2);
+    canvas_fill_rect!(cx + 8.0, body_top, 4.0, body_h);
+
+    // Right edge darker for depth
+    canvas_fill_style!("rgba(0,0,0,0.2)");
+    canvas_fill_rect!(cx + cw - 6.0, body_top, 6.0, body_h);
+    canvas_fill_style!("rgba(0,0,0,0.1)");
+    canvas_fill_rect!(cx + cw - 12.0, body_top, 6.0, body_h);
+
+    // Top ellipse of cylinder
+    let mut top_ellipse_col: String = "#5a0018";
+    if is_frozen { top_ellipse_col = "#3a7a90"; }
+    if is_rush { top_ellipse_col = "#8a6a10"; }
+    canvas_fill_style!(top_ellipse_col);
+    canvas_circle!(center_x, body_top + 2.0, half_w);
+
+    // Bottom ellipse visible portion
+    let mut bot_ellipse_col: String = "#3a0010";
+    if is_frozen { bot_ellipse_col = "#1a4a5e"; }
+    if is_rush { bot_ellipse_col = "#5a3a00"; }
+    canvas_fill_style!(bot_ellipse_col);
+    canvas_circle!(center_x, bottom_y, half_w);
+
+    // Bottom rim
+    canvas_fill_style!("rgba(80,80,80,0.6)");
+    canvas_fill_rect!(cx + 3.0, bottom_y - 1.0, cw - 6.0, 4.0);
+    canvas_fill_style!("rgba(120,120,120,0.4)");
+    canvas_fill_rect!(cx + 5.0, bottom_y - 1.0, cw - 10.0, 2.0);
+
+    // --- Silver/metallic rim at top ---
+    // Outer rim
+    canvas_fill_style!("#888888");
+    canvas_fill_rect!(cx + 4.0, cy, cw - 8.0, rim_h);
+    // Inner rim gradient lighter
+    canvas_fill_style!("#bbbbbb");
+    canvas_fill_rect!(cx + 6.0, cy + 1.0, cw - 12.0, 4.0);
+    // Top highlight bright
+    canvas_fill_style!("#cccccc");
+    canvas_fill_rect!(cx + 8.0, cy + 1.0, cw - 16.0, 2.0);
+    // Darkened bottom of rim
+    canvas_fill_style!("#777777");
+    canvas_fill_rect!(cx + 5.0, cy + rim_h - 3.0, cw - 10.0, 3.0);
+    // Top ellipse for rim
+    canvas_fill_style!("#aaaaaa");
+    canvas_circle!(center_x, cy + 3.0, half_w * 0.5);
+    // Pull-tab circle
+    canvas_fill_style!("#999999");
+    canvas_circle!(center_x + 5.0, cy + 2.0, 4.0);
+    canvas_fill_style!("#bbbbbb");
+    canvas_circle!(center_x + 5.0, cy + 1.5, 2.5);
+    // Pull-tab arm
+    canvas_fill_style!("#888888");
+    canvas_fill_rect!(center_x + 2.0, cy - 1.0, 8.0, 2.0);
+
+    // --- Main label area: FLAMING PEPPER ---
+    // Label background band
+    let mut label_bg: String = "#6a0020";
+    if is_frozen { label_bg = "#4a8aa0"; }
+    if is_rush { label_bg = "#9a7a20"; }
+    canvas_fill_style!(label_bg);
+    canvas_fill_rect!(cx + 2.0, cy + 20.0, cw - 4.0, 50.0);
+
+    // Label edges
+    canvas_fill_style!("rgba(255,255,255,0.15)");
+    canvas_fill_rect!(cx + 2.0, cy + 20.0, cw - 4.0, 1.0);
+    canvas_fill_rect!(cx + 2.0, cy + 69.0, cw - 4.0, 1.0);
+
+    // --- Draw a pepper shape ---
+    let pep_cx: f64 = center_x;
+    let pep_cy: f64 = cy + 48.0;
+    // Pepper body (elongated oval — two circles + rect)
+    canvas_fill_style!("#cc2200");
+    canvas_circle!(pep_cx - 6.0, pep_cy, 7.0);
+    canvas_circle!(pep_cx + 6.0, pep_cy, 6.0);
+    canvas_fill_rect!(pep_cx - 6.0, pep_cy - 7.0, 12.0, 14.0);
+    // Pepper tip (right side pointed)
+    canvas_fill_style!("#aa1800");
+    canvas_circle!(pep_cx + 10.0, pep_cy + 1.0, 4.0);
+    canvas_circle!(pep_cx + 14.0, pep_cy + 2.0, 2.5);
+    // Pepper stem
+    canvas_fill_style!("#228b22");
+    canvas_fill_rect!(pep_cx - 4.0, pep_cy - 12.0, 3.0, 8.0);
+    canvas_fill_style!("#2ca02c");
+    canvas_circle!(pep_cx - 3.0, pep_cy - 12.0, 3.0);
+    // Pepper highlight
+    canvas_fill_style!("rgba(255,255,255,0.25)");
+    canvas_circle!(pep_cx - 4.0, pep_cy - 3.0, 3.0);
+
+    // --- FIRE above the pepper (animated flames) ---
+    let flame_t: f64 = anim_time * 6.0;
+    // Main flame (orange/yellow, oscillating)
+    let f_off1: f64 = math_sin!(flame_t) * 3.0;
+    let f_off2: f64 = math_sin!(flame_t + 1.5) * 2.5;
+    let f_off3: f64 = math_sin!(flame_t + 3.0) * 2.0;
+    // Big orange flame
+    canvas_fill_style!("rgba(255,100,0,0.7)");
+    canvas_circle!(pep_cx + f_off1, pep_cy - 16.0, 6.0);
+    canvas_circle!(pep_cx - 3.0 + f_off2, pep_cy - 20.0, 5.0);
+    // Yellow core
+    canvas_fill_style!("rgba(255,200,0,0.8)");
+    canvas_circle!(pep_cx + f_off2, pep_cy - 14.0, 4.0);
+    canvas_circle!(pep_cx + 2.0 + f_off3, pep_cy - 18.0, 3.0);
+    // White hot center
+    canvas_fill_style!("rgba(255,255,200,0.6)");
+    canvas_circle!(pep_cx + f_off3, pep_cy - 13.0, 2.5);
+    // Red outer flames
+    canvas_fill_style!("rgba(200,0,0,0.4)");
+    canvas_circle!(pep_cx + 5.0 + f_off1, pep_cy - 12.0, 3.5);
+    canvas_circle!(pep_cx - 5.0 + f_off2, pep_cy - 14.0, 3.0);
+    // Sparks
+    canvas_fill_style!("rgba(255,220,0,0.5)");
+    canvas_circle!(pep_cx + f_off1 * 2.0, pep_cy - 24.0 + f_off3, 1.5);
+    canvas_circle!(pep_cx - 4.0 + f_off3, pep_cy - 22.0 + f_off1, 1.0);
+
+    // "Dr P" text at bottom of label
+    canvas_fill_style!("rgba(255,255,255,0.8)");
+    canvas_font!("bold 9px Arial");
+    canvas_text!("Dr P", center_x - 12.0, cy + 66.0);
+
+    // Specular highlight on body (vertical bright stripe)
+    canvas_fill_style!("rgba(255,255,255,0.06)");
+    canvas_fill_rect!(cx + 14.0, body_top, 3.0, body_h);
+
+    // Blue tint overlay when frozen
+    if is_frozen {
+        canvas_fill_style!("rgba(80,180,255,0.2)");
+        canvas_fill_rect!(cx, body_top, cw, body_h);
+        // Ice crystal accents
+        canvas_fill_style!("rgba(200,240,255,0.5)");
+        canvas_circle!(cx + 10.0, cy + 20.0, 2.0);
+        canvas_circle!(cx + cw - 12.0, cy + 30.0, 2.5);
+        canvas_circle!(cx + 15.0, cy + 60.0, 1.5);
+        canvas_circle!(cx + cw - 8.0, cy + 70.0, 2.0);
+    }
+
+    // Shield: purple hexagonal outline
+    if has_shield {
+        // Hexagon around the can
+        canvas_stroke_style!("rgba(155,89,182,0.85)");
+        canvas_line_width!(3.0);
+        let hex_cx: f64 = center_x;
+        let hex_cy: f64 = cy + ch / 2.0;
+        let hex_r: f64 = half_w + 12.0;
+        // Draw hexagon as 6 lines
+        canvas_begin_path!();
+        canvas_move_to!(hex_cx + hex_r, hex_cy);
+        canvas_line_to!(hex_cx + hex_r * 0.5, hex_cy - hex_r * 0.866);
+        canvas_line_to!(hex_cx - hex_r * 0.5, hex_cy - hex_r * 0.866);
+        canvas_line_to!(hex_cx - hex_r, hex_cy);
+        canvas_line_to!(hex_cx - hex_r * 0.5, hex_cy + hex_r * 0.866);
+        canvas_line_to!(hex_cx + hex_r * 0.5, hex_cy + hex_r * 0.866);
+        canvas_close_path!();
+        canvas_stroke!();
+        // Glow fill
+        canvas_fill_style!("rgba(155,89,182,0.08)");
+        canvas_fill!();
+    }
+}
+
+fn draw_fill_meter(fill_pct: f64) {
+    let mx: f64 = 370.0;
+    let my: f64 = 60.0;
+    let mw: f64 = 24.0;
+    let mh: f64 = 180.0;
+    canvas_fill_style!("rgba(0,0,0,0.4)");
+    canvas_fill_rect!(mx + 1.0, my + 1.0, mw, mh);
+    canvas_fill_style!("#2a0008");
+    canvas_fill_rect!(mx, my, mw, mh);
+    canvas_circle!(mx + 12.0, my + 3.0, 12.0);
+    canvas_circle!(mx + 12.0, my + mh - 3.0, 12.0);
+    let fill_h: f64 = fill_pct * mh / 100.0;
+    let fill_top: f64 = my + mh - fill_h;
+    let mut liq_color: String = "#8b0023";
+    if fill_pct > 40.0 { liq_color = "#a01030"; }
+    if fill_pct > 70.0 { liq_color = "#c01040"; }
+    if fill_pct > 90.0 { liq_color = "#e02050"; }
+    canvas_fill_style!(liq_color);
+    canvas_fill_rect!(mx + 2.0, fill_top, mw - 4.0, fill_h);
+    if fill_h > 5.0 {
+        canvas_fill_style!("rgba(255,255,255,0.2)");
+        canvas_fill_rect!(mx + 2.0, fill_top, mw - 4.0, 3.0);
+    }
+    // Animated bubbles
+    if fill_h > 20.0 {
+        let bub_off: f64 = math_sin!(anim_time * 5.0) * 8.0;
+        canvas_fill_style!("rgba(255,255,255,0.2)");
+        canvas_circle!(mx + 8.0, fill_top + fill_h * 0.3 + bub_off, 2.0);
+        canvas_circle!(mx + 16.0, fill_top + fill_h * 0.5 - bub_off, 1.5);
+        canvas_circle!(mx + 11.0, fill_top + fill_h * 0.7 + bub_off * 0.5, 2.5);
+        canvas_circle!(mx + 14.0, fill_top + fill_h * 0.15 - bub_off * 0.7, 1.8);
+    }
+    canvas_fill_style!("#c0c0c0");
+    canvas_fill_rect!(mx + 3.0, my, mw - 6.0, 5.0);
+    canvas_fill_style!("#e0e0e0");
+    canvas_fill_rect!(mx + 5.0, my + 1.0, mw - 10.0, 2.0);
+    canvas_fill_style!("#909090");
+    canvas_fill_rect!(mx + 2.0, my + mh - 3.0, mw - 4.0, 3.0);
+    canvas_save!();
+    canvas_translate!(mx + 12.0, my + mh / 2.0);
+    canvas_rotate!(0.0 - 1.5708);
+    canvas_fill_style!("rgba(255,255,255,0.5)");
+    canvas_font!("bold 8px Arial");
+    canvas_text!("Dr Pepper", -25.0, 4.0);
+    canvas_restore!();
+    let pct_display: f64 = math_floor!(fill_pct);
+    canvas_fill_style!("#ffffff");
+    canvas_font!("bold 10px Arial");
+    canvas_text!("{pct_display}%", mx + 2.0, my + mh + 14.0);
+}
+
+fn draw_background() {
+    canvas_fill_style!("#0f0008");
+    canvas_fill_rect!(0.0, 0.0, 400.0, 100.0);
+    canvas_fill_style!("#120010");
+    canvas_fill_rect!(0.0, 100.0, 400.0, 100.0);
+    canvas_fill_style!("#150018");
+    canvas_fill_rect!(0.0, 200.0, 400.0, 100.0);
+    canvas_fill_style!("#180020");
+    canvas_fill_rect!(0.0, 300.0, 400.0, 100.0);
+    canvas_fill_style!("#1b0028");
+    canvas_fill_rect!(0.0, 400.0, 400.0, 100.0);
+    // Twinkling stars
+    let twinkle: f64 = math_sin!(anim_time * 3.0) * 0.3 + 0.5;
+    let twinkle2: f64 = math_sin!(anim_time * 4.5 + 1.0) * 0.3 + 0.5;
+    canvas_fill_style!("rgba(255,255,255,0.5)");
+    canvas_circle!(star_x0, star_y0, 1.2 * twinkle + 0.5);
+    canvas_circle!(star_x2, star_y2, 1.0 * twinkle2 + 0.5);
+    canvas_circle!(star_x4, star_y4, 1.5 * twinkle + 0.3);
+    canvas_circle!(star_x5, star_y5, 1.0 * twinkle2 + 0.4);
+    canvas_circle!(star_x7, star_y7, 1.3 * twinkle + 0.3);
+    canvas_circle!(star_x9, star_y9, 1.0 * twinkle2 + 0.5);
+    canvas_fill_style!("rgba(255,255,255,0.3)");
+    canvas_circle!(star_x1, star_y1, 1.0 * twinkle2 + 0.4);
+    canvas_circle!(star_x3, star_y3, 1.5 * twinkle + 0.3);
+    canvas_circle!(star_x6, star_y6, 1.2 * twinkle2 + 0.4);
+    canvas_circle!(star_x8, star_y8, 1.0 * twinkle + 0.5);
+    canvas_circle!(star_x10, star_y10, 1.3 * twinkle2 + 0.3);
+    canvas_circle!(star_x11, star_y11, 1.0 * twinkle + 0.4);
+    // Last life danger tint
+    if lives == 1.0 {
+        if game_state == 1.0 {
+            let dtint: f64 = math_sin!(anim_time * 6.0) * 0.04 + 0.04;
+            canvas_fill_style!("rgba(255,0,0,0.06)");
+            canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+        }
+    }
+}
+
+fn draw_obstacle(ox: f64, oy: f64, otype: f64) {
+    let size: f64 = 26.0;
+    let ocx: f64 = ox + size / 2.0;
+    let ocy: f64 = oy + size / 2.0;
+    canvas_fill_style!("rgba(255,80,80,0.2)");
+    canvas_circle!(ocx, ocy, size * 0.9);
+    if otype == 0.0 {
+        canvas_fill_style!("#4fc3f7");
+        canvas_circle!(ocx, ocy + 3.0, 8.0);
+        canvas_begin_path!();
+        canvas_move_to!(ocx, ocy - 10.0);
+        canvas_line_to!(ocx - 7.0, ocy + 1.0);
+        canvas_line_to!(ocx + 7.0, ocy + 1.0);
+        canvas_close_path!();
+        canvas_fill!();
+        canvas_fill_style!("#fff");
+        canvas_font!("bold 8px Arial");
+        canvas_text!("W", ocx - 4.0, ocy + 5.0);
+    }
+    if otype == 1.0 {
+        canvas_fill_style!("#81d4fa");
+        canvas_circle!(ocx, ocy, 10.0);
+        canvas_fill_style!("#b3e5fc");
+        canvas_circle!(ocx, ocy, 6.0);
+        canvas_fill_style!("#fff");
+        canvas_font!("bold 12px Arial");
+        canvas_text!("F", ocx - 4.0, ocy + 5.0);
+    }
+    if otype == 2.0 {
+        canvas_fill_style!("#555");
+        canvas_fill_rect!(ox + 3.0, oy + 2.0, 20.0, 22.0);
+        canvas_fill_style!("#888");
+        canvas_fill_rect!(ox + 6.0, oy, 14.0, 4.0);
+        canvas_fill_style!("#fff");
+        canvas_font!("bold 7px Arial");
+        canvas_text!("RIVAL", ox + 4.0, oy + 16.0);
+    }
+}
+
+fn draw_powerup(ppx: f64, ppy: f64, ptype: f64, spin: f64) {
+    let size: f64 = 28.0;
+    let pcx: f64 = ppx + size / 2.0;
+    let pcy: f64 = ppy + size / 2.0;
+    if ptype == 0.0 { canvas_fill_style!("rgba(46,204,113,0.25)"); }
+    if ptype == 1.0 { canvas_fill_style!("rgba(255,215,0,0.3)"); }
+    if ptype == 2.0 { canvas_fill_style!("rgba(155,89,182,0.25)"); }
+    canvas_circle!(pcx, pcy, size * 0.8);
+    canvas_save!();
+    canvas_translate!(pcx, pcy);
+    canvas_rotate!(spin);
+    canvas_begin_path!();
+    canvas_move_to!(0.0, -12.0);
+    canvas_line_to!(12.0, 0.0);
+    canvas_line_to!(0.0, 12.0);
+    canvas_line_to!(-12.0, 0.0);
+    canvas_close_path!();
+    if ptype == 0.0 { canvas_fill_style!("#2ecc71"); }
+    if ptype == 1.0 { canvas_fill_style!("#ffd700"); }
+    if ptype == 2.0 { canvas_fill_style!("#9b59b6"); }
+    canvas_fill!();
+    canvas_fill_style!("#fff");
+    canvas_circle!(0.0, 0.0, 6.0);
+    if ptype == 0.0 {
+        canvas_fill_style!("#2ecc71");
+        canvas_font!("bold 9px Arial");
+        canvas_text!("W", -4.0, 4.0);
+    }
+    if ptype == 1.0 {
+        canvas_fill_style!("#c9a832");
+        canvas_font!("bold 9px Arial");
+        canvas_text!("$", -4.0, 4.0);
+    }
+    if ptype == 2.0 {
+        canvas_fill_style!("#9b59b6");
+        canvas_font!("bold 8px Arial");
+        canvas_text!("S", -3.0, 4.0);
+    }
+    canvas_restore!();
+}
+
+fn draw_splash_particles() {
+    if sp_active == false { return; }
+    let life: f64 = sp_timer / 0.6;
+    let t: f64 = 0.6 - sp_timer;
+    let grav: f64 = t * t * 300.0;
+    let psize: f64 = 3.0 * life + 1.0;
+    canvas_fill_style!(sp_color);
+    canvas_circle!(sp_x + sp_dx0 * t, sp_y + sp_dy0 * t + grav, psize);
+    canvas_circle!(sp_x + sp_dx1 * t, sp_y + sp_dy1 * t + grav, psize * 0.8);
+    canvas_circle!(sp_x + sp_dx2 * t, sp_y + sp_dy2 * t + grav, psize);
+    canvas_circle!(sp_x + sp_dx3 * t, sp_y + sp_dy3 * t + grav, psize * 0.7);
+    canvas_circle!(sp_x + sp_dx4 * t, sp_y + sp_dy4 * t + grav, psize * 0.9);
+    canvas_circle!(sp_x + sp_dx5 * t, sp_y + sp_dy5 * t + grav, psize * 0.6);
+    canvas_circle!(sp_x + sp_dx6 * t, sp_y + sp_dy6 * t + grav, psize * 0.85);
+    canvas_circle!(sp_x + sp_dx7 * t, sp_y + sp_dy7 * t + grav, psize * 0.75);
+    canvas_fill_style!("rgba(255,255,255,0.5)");
+    canvas_circle!(sp_x + sp_dx0 * t, sp_y + sp_dy0 * t + grav, psize * 0.4);
+    canvas_circle!(sp_x + sp_dx2 * t, sp_y + sp_dy2 * t + grav, psize * 0.4);
+    canvas_circle!(sp_x + sp_dx4 * t, sp_y + sp_dy4 * t + grav, psize * 0.4);
+    canvas_circle!(sp_x + sp_dx6 * t, sp_y + sp_dy6 * t + grav, psize * 0.4);
+}
+
+fn draw_hearts() {
+    let hx: f64 = 140.0;
+    let hy: f64 = 14.0;
+    let spacing: f64 = 22.0;
+    let mut i: f64 = 0.0;
+    // Heart 1
+    if lives >= 1.0 {
+        canvas_fill_style!("#ff3333");
+    } else {
+        canvas_stroke_style!("#553333");
+        canvas_line_width!(1.5);
+        canvas_fill_style!("rgba(0,0,0,0)");
+    }
+    canvas_circle!(hx, hy, 6.0);
+    canvas_circle!(hx + 10.0, hy, 6.0);
+    canvas_begin_path!();
+    canvas_move_to!(hx - 6.0, hy + 2.0);
+    canvas_line_to!(hx + 5.0, hy + 14.0);
+    canvas_line_to!(hx + 16.0, hy + 2.0);
+    canvas_close_path!();
+    canvas_fill!();
+    // Heart 2
+    if lives >= 2.0 { canvas_fill_style!("#ff3333"); } else { canvas_fill_style!("#331111"); }
+    canvas_circle!(hx + spacing, hy, 6.0);
+    canvas_circle!(hx + spacing + 10.0, hy, 6.0);
+    canvas_begin_path!();
+    canvas_move_to!(hx + spacing - 6.0, hy + 2.0);
+    canvas_line_to!(hx + spacing + 5.0, hy + 14.0);
+    canvas_line_to!(hx + spacing + 16.0, hy + 2.0);
+    canvas_close_path!();
+    canvas_fill!();
+    // Heart 3
+    if lives >= 3.0 { canvas_fill_style!("#ff3333"); } else { canvas_fill_style!("#331111"); }
+    canvas_circle!(hx + spacing * 2.0, hy, 6.0);
+    canvas_circle!(hx + spacing * 2.0 + 10.0, hy, 6.0);
+    canvas_begin_path!();
+    canvas_move_to!(hx + spacing * 2.0 - 6.0, hy + 2.0);
+    canvas_line_to!(hx + spacing * 2.0 + 5.0, hy + 14.0);
+    canvas_line_to!(hx + spacing * 2.0 + 16.0, hy + 2.0);
+    canvas_close_path!();
+    canvas_fill!();
+    // Heart 4
+    if lives >= 4.0 { canvas_fill_style!("#ff3333"); } else { canvas_fill_style!("#331111"); }
+    canvas_circle!(hx + spacing * 3.0, hy, 6.0);
+    canvas_circle!(hx + spacing * 3.0 + 10.0, hy, 6.0);
+    canvas_begin_path!();
+    canvas_move_to!(hx + spacing * 3.0 - 6.0, hy + 2.0);
+    canvas_line_to!(hx + spacing * 3.0 + 5.0, hy + 14.0);
+    canvas_line_to!(hx + spacing * 3.0 + 16.0, hy + 2.0);
+    canvas_close_path!();
+    canvas_fill!();
+    // Heart 5
+    if lives >= 5.0 { canvas_fill_style!("#ff3333"); } else { canvas_fill_style!("#331111"); }
+    canvas_circle!(hx + spacing * 4.0, hy, 6.0);
+    canvas_circle!(hx + spacing * 4.0 + 10.0, hy, 6.0);
+    canvas_begin_path!();
+    canvas_move_to!(hx + spacing * 4.0 - 6.0, hy + 2.0);
+    canvas_line_to!(hx + spacing * 4.0 + 5.0, hy + 14.0);
+    canvas_line_to!(hx + spacing * 4.0 + 16.0, hy + 2.0);
+    canvas_close_path!();
+    canvas_fill!();
+    // Flash hearts red on last life
+    if lives == 1.0 {
+        let flash: f64 = math_sin!(anim_time * 8.0);
+        if flash > 0.0 {
+            canvas_fill_style!("rgba(255,0,0,0.4)");
+            canvas_circle!(hx, hy, 8.0);
+        }
+    }
+}
+
+fn reset_game() {
+    score = 0.0;
+    combo = 0.0;
+    max_combo = 0.0;
+    fill = 10.0;
+    lives = 5.0;
+    level = 1.0;
+    drop_speed = 180.0;
+    pepper_rush = false;
+    shield = false;
+    frozen = false;
+    pw = 70.0;
+    go_delay = 0.0;
+    catches_total = 0.0;
+    level_timer = 30.0;
+    double_pts_timer = 0.0;
+    bonus_timer = 0.0;
+    combo_broken_timer = 0.0;
+    jackpot_timer = 0.0;
+    lucky_timer = 0.0;
+    float_score_timer = 0.0;
+    powerup_flash_timer = 0.0;
+    xp_bar = 0.0;
+    d_x0 = random_x();
+    d_y0 = 20.0;
+    d_v0 = random_value();
+    d_x1 = random_x();
+    d_y1 = 120.0;
+    d_v1 = random_value();
+    d_x2 = random_x();
+    d_y2 = 220.0;
+    d_v2 = random_value();
+    d_x3 = random_x();
+    d_y3 = 320.0;
+    d_v3 = random_value();
+    obs_y = -500.0;
+    obs_active = false;
+    pow_y = -800.0;
+    pow_active = false;
+    sp_active = false;
+    px = 165.0;
+    level_complete_timer = 0.0;
+    near_miss_timer = 0.0;
+    shake = 0.0;
+    // Reset weapons
+    weapon_type = 0.0;
+    weapon_timer = 0.0;
+    fire_cooldown = 0.0;
+    frozen_drops = false;
+    frozen_drop_timer = 0.0;
+    shield_burst = false;
+    shield_burst_timer = 0.0;
+    shield_burst_radius = 0.0;
+    freeze_shot_used = false;
+    l_active0 = false;
+    l_active1 = false;
+    l_active2 = false;
+    l_y0 = -50.0;
+    l_y1 = -50.0;
+    l_y2 = -50.0;
+    mb_active = false;
+    mb_y = -50.0;
+    wp_active = false;
+    wp_y = -1000.0;
+    wp_spawn_timer = 15.0;
+    hit_active = false;
+    freeze_tint_timer = 0.0;
+    combo_timer = 0.0;
+    wide_timer = 0.0;
+    freeze_timer = 0.0;
+    rush_timer = 0.0;
+    danger_pulse = 0.0;
+    // Reset frenzy
+    frenzy_active = false;
+    frenzy_timer = 0.0;
+    frenzy_cooldown = 30.0;
+    frenzy_speed_mult = 1.0;
+    // Reset notifications
+    notif0_timer = 0.0;
+    notif1_timer = 0.0;
+    notif2_timer = 0.0;
+    notif3_timer = 0.0;
+    notif0_text = "";
+    notif1_text = "";
+    notif2_text = "";
+    notif3_text = "";
+}
+
+fn start_frenzy() {
+    frenzy_active = true;
+    frenzy_timer = 6.0;
+    frenzy_speed_mult = 2.0;
+    pepper_rush = true;
+    rush_timer = 6.0;
+    push_notif("PEPPER RUSH!", "#ffd700", 3.0);
+    push_notif("ALL DROPS 5x! SPEED x2!", "#ffffff", 2.5);
+    // Init frenzy particles across the screen
+    fp_x0 = math_random!() * 400.0; fp_y0 = math_random!() * -200.0; fp_s0 = 2.0 + math_random!() * 4.0;
+    fp_x1 = math_random!() * 400.0; fp_y1 = math_random!() * -200.0; fp_s1 = 2.0 + math_random!() * 4.0;
+    fp_x2 = math_random!() * 400.0; fp_y2 = math_random!() * -200.0; fp_s2 = 2.0 + math_random!() * 4.0;
+    fp_x3 = math_random!() * 400.0; fp_y3 = math_random!() * -200.0; fp_s3 = 2.0 + math_random!() * 4.0;
+    fp_x4 = math_random!() * 400.0; fp_y4 = math_random!() * -200.0; fp_s4 = 2.0 + math_random!() * 4.0;
+    fp_x5 = math_random!() * 400.0; fp_y5 = math_random!() * -200.0; fp_s5 = 2.0 + math_random!() * 4.0;
+    fp_x6 = math_random!() * 400.0; fp_y6 = math_random!() * -200.0; fp_s6 = 2.0 + math_random!() * 4.0;
+    fp_x7 = math_random!() * 400.0; fp_y7 = math_random!() * -200.0; fp_s7 = 2.0 + math_random!() * 4.0;
+    fp_x8 = math_random!() * 400.0; fp_y8 = math_random!() * -200.0; fp_s8 = 2.0 + math_random!() * 4.0;
+    fp_x9 = math_random!() * 400.0; fp_y9 = math_random!() * -200.0; fp_s9 = 2.0 + math_random!() * 4.0;
+    fp_x10 = math_random!() * 400.0; fp_y10 = math_random!() * -200.0; fp_s10 = 2.0 + math_random!() * 4.0;
+    fp_x11 = math_random!() * 400.0; fp_y11 = math_random!() * -200.0; fp_s11 = 2.0 + math_random!() * 4.0;
+    // Fanfare sounds
+    sfx_levelup!();
+    audio_sweep!(200.0, 2000.0, 0.5, 0.4);
+}
+
+fn update_frenzy(dt: f64) {
+    if frenzy_active {
+        frenzy_timer = frenzy_timer - dt;
+        if frenzy_timer <= 0.0 {
+            frenzy_active = false;
+            frenzy_speed_mult = 1.0;
+            frenzy_cooldown = 25.0 + math_random!() * 20.0;
+        }
+        // Move frenzy particles down fast
+        let fspeed: f64 = 400.0 + math_random!() * 200.0;
+        fp_y0 = fp_y0 + fspeed * dt; if fp_y0 > 520.0 { fp_y0 = -20.0; fp_x0 = math_random!() * 400.0; }
+        fp_y1 = fp_y1 + fspeed * dt; if fp_y1 > 520.0 { fp_y1 = -20.0; fp_x1 = math_random!() * 400.0; }
+        fp_y2 = fp_y2 + fspeed * dt; if fp_y2 > 520.0 { fp_y2 = -20.0; fp_x2 = math_random!() * 400.0; }
+        fp_y3 = fp_y3 + fspeed * dt; if fp_y3 > 520.0 { fp_y3 = -20.0; fp_x3 = math_random!() * 400.0; }
+        fp_y4 = fp_y4 + fspeed * dt; if fp_y4 > 520.0 { fp_y4 = -20.0; fp_x4 = math_random!() * 400.0; }
+        fp_y5 = fp_y5 + fspeed * dt; if fp_y5 > 520.0 { fp_y5 = -20.0; fp_x5 = math_random!() * 400.0; }
+        fp_y6 = fp_y6 + fspeed * dt; if fp_y6 > 520.0 { fp_y6 = -20.0; fp_x6 = math_random!() * 400.0; }
+        fp_y7 = fp_y7 + fspeed * dt; if fp_y7 > 520.0 { fp_y7 = -20.0; fp_x7 = math_random!() * 400.0; }
+        fp_y8 = fp_y8 + fspeed * dt; if fp_y8 > 520.0 { fp_y8 = -20.0; fp_x8 = math_random!() * 400.0; }
+        fp_y9 = fp_y9 + fspeed * dt; if fp_y9 > 520.0 { fp_y9 = -20.0; fp_x9 = math_random!() * 400.0; }
+        fp_y10 = fp_y10 + fspeed * dt; if fp_y10 > 520.0 { fp_y10 = -20.0; fp_x10 = math_random!() * 400.0; }
+        fp_y11 = fp_y11 + fspeed * dt; if fp_y11 > 520.0 { fp_y11 = -20.0; fp_x11 = math_random!() * 400.0; }
+        // Crazy sounds every ~0.5s
+        if math_random!() < dt * 2.0 {
+            audio_beep!(800.0 + math_random!() * 1200.0, 0.05, 0.15);
+        }
+    } else {
+        frenzy_cooldown = frenzy_cooldown - dt;
+        if frenzy_cooldown <= 0.0 {
+            start_frenzy();
+        }
+    }
+}
+
+fn draw_frenzy_particles() {
+    if frenzy_active == false { return; }
+    // Draw golden/white sparkles falling everywhere
+    let alpha: f64 = 0.6 + math_sin!(anim_time * 10.0) * 0.3;
+    // Gold particles
+    canvas_fill_style!("rgba(255,215,0,0.7)");
+    canvas_circle!(fp_x0, fp_y0, fp_s0);
+    canvas_circle!(fp_x2, fp_y2, fp_s2);
+    canvas_circle!(fp_x4, fp_y4, fp_s4);
+    canvas_circle!(fp_x6, fp_y6, fp_s6);
+    canvas_circle!(fp_x8, fp_y8, fp_s8);
+    canvas_circle!(fp_x10, fp_y10, fp_s10);
+    // White particles
+    canvas_fill_style!("rgba(255,255,255,0.8)");
+    canvas_circle!(fp_x1, fp_y1, fp_s1);
+    canvas_circle!(fp_x3, fp_y3, fp_s3);
+    canvas_circle!(fp_x5, fp_y5, fp_s5);
+    canvas_circle!(fp_x7, fp_y7, fp_s7);
+    canvas_circle!(fp_x9, fp_y9, fp_s9);
+    canvas_circle!(fp_x11, fp_y11, fp_s11);
+    // Frenzy golden tint
+    canvas_fill_style!("rgba(255,215,0,0.2)");
+    canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+}
+
+fn handle_drop_catch(dv: f64, cx: f64, cy: f64) {
+    let mut val: f64 = dv;
+    if pepper_rush { val = 5.0; }
+    let mult: f64 = combo_multiplier();
+    let mut pts: f64 = val * 10.0 * mult;
+    if double_pts_timer > 0.0 { pts = pts * 2.0; }
+    score = score + pts;
+    combo = combo + 1.0;
+    combo_timer = 2.0;
+    combo_scale = 1.5;
+    catches_total = catches_total + 1.0;
+    fake_catches = fake_catches + 1.0;
+    if combo > max_combo { max_combo = combo; }
+    fill = fill + 2.0;
+    if fill > 100.0 { fill = 100.0; }
+    xp_bar = xp_bar + 1.0;
+    if xp_bar > 20.0 { xp_bar = 0.0; }
+    // Float score
+    float_score_val = pts;
+    float_score_x = cx;
+    float_score_y = cy;
+    float_score_timer = 1.0;
+    // Screen shake: small for normal, huge for 10x
+    shake = 1.0;
+    sfx_coin!();
+    if combo > 1.0 { sfx_combo!(combo); }
+    // Jackpot 10x catch
+    if dv == 10.0 {
+        jackpot_timer = 0.5;
+        lucky_timer = 1.5;
+        shake = 8.0;
+        sfx_levelup!();
+        push_notif("LUCKY! JACKPOT!", "#ffd700", 1.5);
+    }
+    // Bonus event every 10 catches
+    let catch_mod: f64 = catches_total - math_floor!(catches_total / 10.0) * 10.0;
+    if catch_mod == 0.0 {
+        if catches_total > 0.0 {
+            bonus_timer = 0.3;
+            let br: f64 = math_random!();
+            if br < 0.33 {
+                bonus_type = 0.0;
+                double_pts_timer = 3.0;
+                push_notif("DOUBLE POINTS!", "#ffd700", 1.5);
+            }
+            if br >= 0.33 {
+                if br < 0.66 {
+                    bonus_type = 1.0;
+                    lives = lives + 1.0;
+                    if lives > 5.0 { lives = 5.0; }
+                    push_notif("EXTRA LIFE!", "#ffd700", 1.5);
+                }
+            }
+            if br >= 0.66 {
+                bonus_type = 2.0;
+                shield = true;
+                push_notif("SHIELD!", "#9b59b6", 1.5);
+            }
+            sfx_powerup!();
+        }
+    }
+}
+
+fn handle_drop_miss() {
+    let old_combo: f64 = combo;
+    if shield {
+        shield = false;
+        return;
+    }
+    lives = lives - 1.0;
+    shake = 5.0;
+    sfx_hit!();
+    fill = fill - 5.0;
+    if fill < 0.0 { fill = 0.0; }
+    // Combo broken effect
+    if old_combo >= 5.0 {
+        combo_broken_timer = 1.5;
+        combo_broken_val = old_combo;
+        push_notif("COMBO BROKEN!", "#ff3333", 1.5);
+    }
+    combo = 0.0;
+    combo_timer = 0.0;
+    if lives <= 0.0 {
+        lives = 0.0;
+        if score > best_score { best_score = score; }
+        game_state = 3.0;
+        go_delay = 0.0;
+        sfx_gameover!();
+    }
+}
 
 fn frame() {
-    // Update
-    if key_is_down!("ArrowLeft") { px = px - 280.0 * 0.016; }
-    if key_is_down!("ArrowRight") { px = px + 280.0 * 0.016; }
-    if mouse_is_down!() { px = mouse_x!() - 30.0; }
-    if touch_is_active!() { px = touch_x!() - 30.0; }
-    if px < 0.0 { px = 0.0; }
-    if px > 340.0 { px = 340.0; }
+    let dt: f64 = 0.016;
+    anim_time = anim_time + dt;
 
-    dy = dy + sp * 0.016;
+    // --- Mute toggle ---
+    if key_just_pressed!("m") {
+        if muted {
+            muted = false;
+            audio_unmute!();
+        } else {
+            muted = true;
+            audio_mute!();
+        }
+    }
 
-    // Catch
-    if dy > 440.0 {
-        if dx + 24.0 > px {
-            if dx < px + 60.0 {
-                sc = sc + 1;
-                sp = sp + 8.0;
+    // ========= MENU (game_state == 0) =========
+    if game_state == 0.0 {
+        draw_background();
+        // Animated menu drops
+        let menu_d0y: f64 = anim_time * 60.0 - math_floor!(anim_time * 60.0 / 500.0) * 500.0;
+        let menu_d1y: f64 = anim_time * 45.0 + 200.0 - math_floor!((anim_time * 45.0 + 200.0) / 500.0) * 500.0;
+        let menu_d2y: f64 = anim_time * 75.0 + 350.0 - math_floor!((anim_time * 75.0 + 350.0) / 500.0) * 500.0;
+        draw_teardrop(60.0, menu_d0y, 6.0, "#8b0023", false);
+        draw_teardrop(300.0, menu_d1y, 7.0, "#c0392b", false);
+        draw_teardrop(180.0, menu_d2y, 5.0, "#ff6b35", false);
+        // Title card
+        canvas_fill_style!("rgba(90,0,24,0.85)");
+        canvas_fill_rect!(30.0, 60.0, 340.0, 120.0);
+        canvas_stroke_style!("#c9a832");
+        canvas_line_width!(2.0);
+        canvas_stroke_rect!(30.0, 60.0, 340.0, 120.0);
+        canvas_fill_style!("#8b0023");
+        canvas_font!("bold 32px Arial");
+        canvas_text!("DR PEPPER", 90.0, 110.0);
+        canvas_fill_style!("#ffd700");
+        canvas_font!("bold 16px Arial");
+        canvas_text!("CATCH THE DROP", 120.0, 145.0);
+        let bob: f64 = math_sin!(anim_time * 3.0) * 5.0;
+        draw_teardrop(55.0, 90.0 + bob, 8.0, "#8b0023", false);
+        draw_teardrop(345.0, 100.0 - bob, 8.0, "#8b0023", false);
+        draw_teardrop(200.0, 68.0 + bob * 0.5, 6.0, "#ffd700", true);
+        // Play button
+        let pulse: f64 = math_sin!(anim_time * 4.0) * 3.0;
+        canvas_fill_style!("rgba(201,168,50,0.9)");
+        canvas_fill_rect!(130.0, 210.0 - pulse * 0.5, 140.0, 40.0);
+        canvas_stroke_style!("#ffd700");
+        canvas_line_width!(2.0);
+        canvas_stroke_rect!(130.0, 210.0 - pulse * 0.5, 140.0, 40.0);
+        canvas_fill_style!("#ffffff");
+        canvas_font!("bold 22px Arial");
+        canvas_text!("PLAY", 168.0, 238.0 - pulse * 0.5);
+        // Style selector
+        canvas_fill_style!("rgba(255,255,255,0.7)");
+        canvas_font!("bold 14px Arial");
+        canvas_text!("STYLE:", 60.0, 290.0);
+        let mut s0c: String = "#555555";
+        if style_sel == 0.0 { s0c = "#ffd700"; }
+        canvas_fill_style!(s0c);
+        canvas_font!("bold 13px Arial");
+        canvas_text!("Classic", 120.0, 290.0);
+        let mut s1c: String = "#555555";
+        if style_sel == 1.0 { s1c = "#ff00ff"; }
+        canvas_fill_style!(s1c);
+        canvas_text!("Neon", 200.0, 290.0);
+        let mut s2c: String = "#555555";
+        if style_sel == 2.0 { s2c = "#00ccff"; }
+        canvas_fill_style!(s2c);
+        canvas_text!("Ocean", 260.0, 290.0);
+        // Best score
+        if best_score > 0.0 {
+            let bs: f64 = math_floor!(best_score);
+            canvas_fill_style!("#ffd700");
+            canvas_font!("bold 14px Arial");
+            canvas_text!("BEST: {bs}", 155.0, 320.0);
+        }
+        // Mute text
+        canvas_fill_style!("rgba(255,255,255,0.5)");
+        canvas_font!("12px Arial");
+        if muted {
+            canvas_text!("[MUTED] Press M to unmute", 110.0, 350.0);
+        } else {
+            canvas_text!("Press M to mute", 140.0, 350.0);
+        }
+        // Instructions
+        canvas_fill_style!("rgba(255,255,255,0.4)");
+        canvas_font!("11px Arial");
+        canvas_text!("Arrow keys / WASD / Mouse / Touch to move", 70.0, 390.0);
+        canvas_text!("Catch weapons to auto-fire | ESC = Pause | M = Mute", 40.0, 410.0);
+        canvas_text!("Press ENTER or click PLAY to start", 90.0, 440.0);
+        // Click handlers
+        if mouse_just_clicked!() {
+            let mcx: f64 = mouse_x!();
+            let mcy: f64 = mouse_y!();
+            if mcx > 115.0 {
+                if mcx < 190.0 {
+                    if mcy > 275.0 {
+                        if mcy < 300.0 { style_sel = 0.0; sfx_coin!(); }
+                    }
+                }
+            }
+            if mcx > 195.0 {
+                if mcx < 250.0 {
+                    if mcy > 275.0 {
+                        if mcy < 300.0 { style_sel = 1.0; sfx_coin!(); }
+                    }
+                }
+            }
+            if mcx > 255.0 {
+                if mcx < 320.0 {
+                    if mcy > 275.0 {
+                        if mcy < 300.0 { style_sel = 2.0; sfx_coin!(); }
+                    }
+                }
+            }
+            if mcx > 130.0 {
+                if mcx < 270.0 {
+                    if mcy > 200.0 {
+                        if mcy < 260.0 {
+                            reset_game();
+                            game_state = 1.0;
+                            if audio_started == false { audio_init!(); audio_started = true; }
+                            sfx_powerup!();
+                        }
+                    }
+                }
+            }
+        }
+        if key_just_pressed!("Enter") {
+            reset_game();
+            game_state = 1.0;
+            if audio_started == false { audio_init!(); audio_started = true; }
+            sfx_powerup!();
+        }
+        if key_just_pressed!("1") { style_sel = 0.0; sfx_coin!(); }
+        if key_just_pressed!("2") { style_sel = 1.0; sfx_coin!(); }
+        if key_just_pressed!("3") { style_sel = 2.0; sfx_coin!(); }
+        return;
+    }
+
+    // ========= GAME OVER (game_state == 3) =========
+    if game_state == 3.0 {
+        go_delay = go_delay + dt;
+        if go_delay > 5.0 { go_delay = 5.0; }
+        draw_background();
+        canvas_fill_style!("rgba(0,0,0,0.75)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+        // Red flash at start
+        if go_delay < 0.3 {
+            canvas_fill_style!("rgba(139,0,0,0.4)");
+            canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+        }
+        // Panel
+        canvas_fill_style!("rgba(90,0,24,0.9)");
+        canvas_fill_rect!(40.0, 60.0, 320.0, 360.0);
+        canvas_stroke_style!("#c9a832");
+        canvas_line_width!(3.0);
+        canvas_stroke_rect!(40.0, 60.0, 320.0, 360.0);
+        // GAME OVER
+        canvas_fill_style!("#ff3333");
+        canvas_font!("bold 38px Arial");
+        canvas_text!("GAME OVER", 65.0, 120.0);
+        // Score
+        let go_score: f64 = math_floor!(score);
+        canvas_fill_style!("#ffd700");
+        canvas_font!("bold 36px Arial");
+        canvas_text!("{go_score}", 130.0, 175.0);
+        canvas_fill_style!("rgba(255,255,255,0.6)");
+        canvas_font!("14px Arial");
+        canvas_text!("POINTS", 170.0, 195.0);
+        // New best
+        if score >= best_score {
+            if score > 0.0 {
+                canvas_fill_style!("#ffd700");
+                canvas_font!("bold 16px Arial");
+                canvas_text!("NEW BEST!", 155.0, 220.0);
+            }
+        }
+        // Stats
+        canvas_fill_style!("#ffffff");
+        canvas_font!("16px Arial");
+        let go_lv: f64 = math_floor!(level);
+        let go_mc: f64 = math_floor!(max_combo);
+        let go_bs: f64 = math_floor!(best_score);
+        canvas_text!("Level: {go_lv}", 150.0, 255.0);
+        canvas_text!("Max Combo: {go_mc}x", 135.0, 280.0);
+        canvas_text!("Best Score: {go_bs}", 130.0, 305.0);
+        // Social proof
+        let beat_pct: f64 = math_floor!(math_random!() * 45.0 + 40.0);
+        canvas_fill_style!("rgba(255,215,0,0.8)");
+        canvas_font!("bold 14px Arial");
+        canvas_text!("You beat 67% of players!", 110.0, 340.0);
+        // Restart prompt — only after 1 second delay
+        if go_delay >= 1.0 {
+            let blink: f64 = math_sin!(anim_time * 4.0);
+            if blink > -0.3 {
+                canvas_fill_style!("rgba(255,255,255,0.7)");
+                canvas_font!("bold 14px Arial");
+                canvas_text!("Press ENTER to try again", 105.0, 390.0);
+            }
+            if key_just_pressed!("Enter") {
+                reset_game();
+                game_state = 1.0;
                 sfx_coin!();
-                dx = math_floor!(math_random!() * 376.0);
-                dy = 0.0 - 32.0;
+            }
+            if mouse_just_clicked!() {
+                reset_game();
+                game_state = 1.0;
+                sfx_coin!();
+            }
+        } else {
+            canvas_fill_style!("rgba(255,255,255,0.3)");
+            canvas_font!("12px Arial");
+            canvas_text!("Wait...", 175.0, 390.0);
+        }
+        return;
+    }
+
+    // ========= LEVEL COMPLETE (game_state == 4) =========
+    if game_state == 4.0 {
+        level_complete_timer = level_complete_timer - dt;
+        draw_background();
+        // Golden wave sweep
+        canvas_fill_style!("rgba(255,215,0,0.12)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+        // Panel
+        canvas_fill_style!("rgba(0,0,0,0.6)");
+        canvas_fill_rect!(60.0, 140.0, 280.0, 200.0);
+        canvas_stroke_style!("#ffd700");
+        canvas_line_width!(3.0);
+        canvas_stroke_rect!(60.0, 140.0, 280.0, 200.0);
+        canvas_fill_style!("#ffd700");
+        canvas_font!("bold 30px Arial");
+        canvas_text!("LEVEL UP!", 110.0, 190.0);
+        let lv_show: f64 = math_floor!(level);
+        canvas_fill_style!("#ffffff");
+        canvas_font!("bold 22px Arial");
+        canvas_text!("Level {lv_show}", 145.0, 230.0);
+        // Stars rating
+        canvas_fill_style!("#ffd700");
+        canvas_font!("bold 28px Arial");
+        if level_stars >= 3.0 {
+            canvas_text!("* * *", 155.0, 280.0);
+        }
+        if level_stars == 2.0 {
+            canvas_text!("* *", 165.0, 280.0);
+            canvas_fill_style!("#555");
+            canvas_text!("*", 215.0, 280.0);
+        }
+        if level_stars == 1.0 {
+            canvas_text!("*", 155.0, 280.0);
+            canvas_fill_style!("#555");
+            canvas_text!("* *", 175.0, 280.0);
+        }
+        // Star criteria text
+        canvas_fill_style!("rgba(255,255,255,0.5)");
+        canvas_font!("11px Arial");
+        canvas_text!("Complete | >50% fill | >80% fill", 105.0, 310.0);
+        if level_complete_timer <= 0.0 {
+            game_state = 1.0;
+            level_timer = 30.0;
+            fill = 10.0;
+        }
+        return;
+    }
+
+    // ========= PAUSE =========
+    if key_just_pressed!("Escape") {
+        if game_state == 1.0 {
+            game_state = 2.0;
+        } else {
+            if game_state == 2.0 {
+                game_state = 1.0;
+            }
+        }
+    }
+    if game_state == 2.0 {
+        draw_background();
+        canvas_fill_style!("rgba(0,0,0,0.75)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+        canvas_fill_style!("#ffd700");
+        canvas_font!("bold 36px Arial");
+        canvas_text!("PAUSED", 115.0, 230.0);
+        canvas_fill_style!("rgba(255,255,255,0.5)");
+        canvas_font!("16px Arial");
+        canvas_text!("Press ESC to resume", 115.0, 270.0);
+        let s_hud: f64 = math_floor!(score);
+        canvas_fill_style!("#ffffff");
+        canvas_font!("14px Arial");
+        canvas_text!("Score: {s_hud}", 155.0, 310.0);
+        return;
+    }
+
+    // ========= PLAYING (game_state == 1) =========
+    // Guard: only run game logic when playing
+    if game_state == 1.0 {
+        // --- INPUT ---
+        if frozen == false {
+            if key_is_down!("ArrowLeft") { px = px - pspeed * dt; }
+            if key_is_down!("ArrowRight") { px = px + pspeed * dt; }
+            if key_is_down!("a") { px = px - pspeed * dt; }
+            if key_is_down!("d") { px = px + pspeed * dt; }
+            if mouse_is_down!() { px = mouse_x!() - pw / 2.0; }
+            if touch_is_active!() { px = touch_x!() - pw / 2.0; }
+        }
+        if px < 0.0 { px = 0.0; }
+        if px > 400.0 - pw { px = 400.0 - pw; }
+
+        // --- TIMERS ---
+        level_timer = level_timer - dt;
+        if frozen {
+            freeze_timer = freeze_timer - dt;
+            if freeze_timer <= 0.0 { frozen = false; }
+        }
+        if wide_timer > 0.0 {
+            wide_timer = wide_timer - dt;
+            if wide_timer <= 0.0 { pw = 70.0; }
+        }
+        if pepper_rush {
+            rush_timer = rush_timer - dt;
+            if rush_timer <= 0.0 { pepper_rush = false; }
+        }
+        if combo_timer > 0.0 {
+            combo_timer = combo_timer - dt;
+            if combo_timer <= 0.0 { combo = 0.0; }
+        }
+        if near_miss_timer > 0.0 { near_miss_timer = near_miss_timer - dt; }
+        if combo_broken_timer > 0.0 { combo_broken_timer = combo_broken_timer - dt; }
+        if jackpot_timer > 0.0 { jackpot_timer = jackpot_timer - dt; }
+        if lucky_timer > 0.0 { lucky_timer = lucky_timer - dt; }
+        if bonus_timer > 0.0 { bonus_timer = bonus_timer - dt; }
+        if double_pts_timer > 0.0 { double_pts_timer = double_pts_timer - dt; }
+        if float_score_timer > 0.0 { float_score_timer = float_score_timer - dt; }
+        if powerup_flash_timer > 0.0 { powerup_flash_timer = powerup_flash_timer - dt; }
+        if shake > 0.0 { shake = shake - dt * 10.0; if shake < 0.0 { shake = 0.0; } }
+        // Frenzy event update
+        update_frenzy(dt);
+        if sp_active {
+            sp_timer = sp_timer - dt;
+            if sp_timer <= 0.0 { sp_active = false; }
+        }
+        if combo_scale > 1.0 {
+            combo_scale = combo_scale - dt * 3.0;
+            if combo_scale < 1.0 { combo_scale = 1.0; }
+        }
+        pow_spin = pow_spin + dt * 3.0;
+        danger_pulse = danger_pulse + dt * 6.0;
+        fake_catches = fake_catches + dt * 0.3;
+
+        // --- WEAPON TIMERS ---
+        if weapon_type > 0.0 {
+            weapon_timer = weapon_timer - dt;
+            if weapon_timer <= 0.0 {
+                weapon_type = 0.0;
+                weapon_timer = 0.0;
+            }
+        }
+        if frozen_drops {
+            frozen_drop_timer = frozen_drop_timer - dt;
+            if frozen_drop_timer <= 0.0 { frozen_drops = false; }
+        }
+        if shield_burst {
+            shield_burst_timer = shield_burst_timer - dt;
+            shield_burst_radius = shield_burst_radius + dt * 300.0;
+            if shield_burst_timer <= 0.0 {
+                shield_burst = false;
+                shield_burst_radius = 0.0;
+            }
+        }
+        if hit_active {
+            hit_timer = hit_timer - dt;
+            if hit_timer <= 0.0 { hit_active = false; }
+        }
+        if freeze_tint_timer > 0.0 { freeze_tint_timer = freeze_tint_timer - dt; }
+        wp_spin = wp_spin + dt * 3.0;
+
+        // --- WEAPON PICKUP SPAWNING ---
+        wp_spawn_timer = wp_spawn_timer - dt;
+        if wp_spawn_timer <= 0.0 {
+            if wp_active == false {
+                wp_x = random_x();
+                wp_y = -40.0;
+                wp_active = true;
+                wp_type = math_floor!(math_random!() * 4.0);
+                wp_spawn_timer = 15.0 + math_random!() * 5.0;
+            } else {
+                wp_spawn_timer = 5.0;
+            }
+        }
+        if wp_active {
+            wp_y = wp_y + drop_speed * 0.5 * dt;
+            if wp_y > 510.0 { wp_active = false; wp_y = -1000.0; }
+        }
+
+        // --- WEAPON PICKUP COLLISION (auto-fire on catch) ---
+        if wp_active {
+            if wp_y + 28.0 > py {
+                if wp_x + 28.0 > px {
+                    if wp_x < px + pw {
+                        wp_active = false;
+                        wp_y = -1000.0;
+                        let caught_weapon: f64 = wp_type + 1.0;
+                        sfx_powerup!();
+                        shake = 2.0;
+                        powerup_flash_timer = 0.2;
+                        powerup_flash_color = "#00ffff";
+                        let fcx: f64 = px + pw / 2.0;
+                        let fcy: f64 = py;
+                        // Spread Shot: instantly fire 3 lasers upward
+                        if caught_weapon == 1.0 {
+                            fire_laser(fcx, fcy, 0.0);
+                            fire_laser(fcx, fcy, 0.0 - 0.2618);
+                            fire_laser(fcx, fcy, 0.2618);
+                            audio_beep!(880.0, 0.05, 0.3);
+                            shake = 3.0;
+                        }
+                        // Mega Blast: instant explosion at can, destroy drops within 100px
+                        if caught_weapon == 2.0 {
+                            mb_x = fcx;
+                            mb_y = fcy;
+                            mb_active = true;
+                            mb_radius = 100.0;
+                            audio_beep!(110.0, 0.2, 0.5);
+                            shake = 5.0;
+                            // Check all drops within 100px radius
+                            let mut mdx0: f64 = d_x0 - fcx;
+                            let mut mdy0: f64 = d_y0 - fcy;
+                            if mdx0 < 0.0 { mdx0 = 0.0 - mdx0; }
+                            if mdy0 < 0.0 { mdy0 = 0.0 - mdy0; }
+                            if mdx0 < 100.0 {
+                                if mdy0 < 100.0 {
+                                    score = score + 10.0;
+                                    spawn_hit_explosion(d_x0, d_y0);
+                                    d_x0 = random_x();
+                                    d_y0 = -40.0;
+                                    d_v0 = random_value();
+                                }
+                            }
+                            let mut mdx1: f64 = d_x1 - fcx;
+                            let mut mdy1: f64 = d_y1 - fcy;
+                            if mdx1 < 0.0 { mdx1 = 0.0 - mdx1; }
+                            if mdy1 < 0.0 { mdy1 = 0.0 - mdy1; }
+                            if mdx1 < 100.0 {
+                                if mdy1 < 100.0 {
+                                    score = score + 10.0;
+                                    spawn_hit_explosion(d_x1, d_y1);
+                                    d_x1 = random_x();
+                                    d_y1 = -40.0 - math_random!() * 100.0;
+                                    d_v1 = random_value();
+                                }
+                            }
+                            let mut mdx2: f64 = d_x2 - fcx;
+                            let mut mdy2: f64 = d_y2 - fcy;
+                            if mdx2 < 0.0 { mdx2 = 0.0 - mdx2; }
+                            if mdy2 < 0.0 { mdy2 = 0.0 - mdy2; }
+                            if mdx2 < 100.0 {
+                                if mdy2 < 100.0 {
+                                    score = score + 10.0;
+                                    spawn_hit_explosion(d_x2, d_y2);
+                                    d_x2 = random_x();
+                                    d_y2 = -40.0 - math_random!() * 150.0;
+                                    d_v2 = random_value();
+                                }
+                            }
+                            let mut mdx3: f64 = d_x3 - fcx;
+                            let mut mdy3: f64 = d_y3 - fcy;
+                            if mdx3 < 0.0 { mdx3 = 0.0 - mdx3; }
+                            if mdy3 < 0.0 { mdy3 = 0.0 - mdy3; }
+                            if mdx3 < 100.0 {
+                                if mdy3 < 100.0 {
+                                    score = score + 10.0;
+                                    spawn_hit_explosion(d_x3, d_y3);
+                                    d_x3 = random_x();
+                                    d_y3 = -40.0 - math_random!() * 200.0;
+                                    d_v3 = random_value();
+                                }
+                            }
+                        }
+                        // Freeze Ray: instantly freeze all drops for 3 seconds
+                        if caught_weapon == 3.0 {
+                            frozen_drops = true;
+                            frozen_drop_timer = 3.0;
+                            freeze_tint_timer = 0.3;
+                            audio_sweep!(2000.0, 4000.0, 0.15, 0.3);
+                        }
+                        // Shield Burst: shockwave + 1s invulnerability
+                        if caught_weapon == 4.0 {
+                            shield_burst = true;
+                            shield_burst_timer = 1.0;
+                            shield_burst_radius = 10.0;
+                            shield = true;
+                            audio_noise!(0.1, 0.4);
+                            shake = 4.0;
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- MOVE LASER PROJECTILES ---
+        if l_active0 {
+            l_x0 = l_x0 + math_sin!(l_ang0) * 600.0 * dt;
+            l_y0 = l_y0 - math_cos!(l_ang0) * 600.0 * dt;
+            if l_y0 < -20.0 { l_active0 = false; }
+            if l_x0 < -20.0 { l_active0 = false; }
+            if l_x0 > 420.0 { l_active0 = false; }
+        }
+        if l_active1 {
+            l_x1 = l_x1 + math_sin!(l_ang1) * 600.0 * dt;
+            l_y1 = l_y1 - math_cos!(l_ang1) * 600.0 * dt;
+            if l_y1 < -20.0 { l_active1 = false; }
+            if l_x1 < -20.0 { l_active1 = false; }
+            if l_x1 > 420.0 { l_active1 = false; }
+        }
+        if l_active2 {
+            l_x2 = l_x2 + math_sin!(l_ang2) * 600.0 * dt;
+            l_y2 = l_y2 - math_cos!(l_ang2) * 600.0 * dt;
+            if l_y2 < -20.0 { l_active2 = false; }
+            if l_x2 < -20.0 { l_active2 = false; }
+            if l_x2 > 420.0 { l_active2 = false; }
+        }
+
+        // --- MOVE MEGA BLAST ---
+        if mb_active {
+            mb_y = mb_y - 300.0 * dt;
+            if mb_y < -40.0 { mb_active = false; }
+        }
+
+        // --- LASER HIT DETECTION (drop 0) ---
+        if l_active0 {
+            if check_laser_hit_drop(l_x0, l_y0, d_x0, d_y0) {
+                l_active0 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x0, d_y0);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x0 = random_x();
+                d_y0 = -40.0;
+                d_v0 = random_value();
+            }
+        }
+        if l_active1 {
+            if check_laser_hit_drop(l_x1, l_y1, d_x0, d_y0) {
+                l_active1 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x0, d_y0);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x0 = random_x();
+                d_y0 = -40.0;
+                d_v0 = random_value();
+            }
+        }
+        if l_active2 {
+            if check_laser_hit_drop(l_x2, l_y2, d_x0, d_y0) {
+                l_active2 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x0, d_y0);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x0 = random_x();
+                d_y0 = -40.0;
+                d_v0 = random_value();
+            }
+        }
+        // --- LASER HIT DETECTION (drop 1) ---
+        if l_active0 {
+            if check_laser_hit_drop(l_x0, l_y0, d_x1, d_y1) {
+                l_active0 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x1, d_y1);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x1 = random_x();
+                d_y1 = -40.0 - math_random!() * 100.0;
+                d_v1 = random_value();
+            }
+        }
+        if l_active1 {
+            if check_laser_hit_drop(l_x1, l_y1, d_x1, d_y1) {
+                l_active1 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x1, d_y1);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x1 = random_x();
+                d_y1 = -40.0 - math_random!() * 100.0;
+                d_v1 = random_value();
+            }
+        }
+        if l_active2 {
+            if check_laser_hit_drop(l_x2, l_y2, d_x1, d_y1) {
+                l_active2 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x1, d_y1);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x1 = random_x();
+                d_y1 = -40.0 - math_random!() * 100.0;
+                d_v1 = random_value();
+            }
+        }
+        // --- LASER HIT DETECTION (drop 2) ---
+        if l_active0 {
+            if check_laser_hit_drop(l_x0, l_y0, d_x2, d_y2) {
+                l_active0 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x2, d_y2);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x2 = random_x();
+                d_y2 = -40.0 - math_random!() * 150.0;
+                d_v2 = random_value();
+            }
+        }
+        if l_active1 {
+            if check_laser_hit_drop(l_x1, l_y1, d_x2, d_y2) {
+                l_active1 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x2, d_y2);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x2 = random_x();
+                d_y2 = -40.0 - math_random!() * 150.0;
+                d_v2 = random_value();
+            }
+        }
+        if l_active2 {
+            if check_laser_hit_drop(l_x2, l_y2, d_x2, d_y2) {
+                l_active2 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x2, d_y2);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x2 = random_x();
+                d_y2 = -40.0 - math_random!() * 150.0;
+                d_v2 = random_value();
+            }
+        }
+        // --- LASER HIT DETECTION (drop 3) ---
+        if l_active0 {
+            if check_laser_hit_drop(l_x0, l_y0, d_x3, d_y3) {
+                l_active0 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x3, d_y3);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x3 = random_x();
+                d_y3 = -40.0 - math_random!() * 200.0;
+                d_v3 = random_value();
+            }
+        }
+        if l_active1 {
+            if check_laser_hit_drop(l_x1, l_y1, d_x3, d_y3) {
+                l_active1 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x3, d_y3);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x3 = random_x();
+                d_y3 = -40.0 - math_random!() * 200.0;
+                d_v3 = random_value();
+            }
+        }
+        if l_active2 {
+            if check_laser_hit_drop(l_x2, l_y2, d_x3, d_y3) {
+                l_active2 = false;
+                score = score + 10.0;
+                spawn_hit_explosion(d_x3, d_y3);
+                audio_beep!(440.0, 0.1, 0.2);
+                d_x3 = random_x();
+                d_y3 = -40.0 - math_random!() * 200.0;
+                d_v3 = random_value();
+            }
+        }
+
+        // --- LASER HIT OBSTACLE ---
+        if obs_active {
+            if l_active0 {
+                if check_laser_hit_drop(l_x0, l_y0, obs_x + 13.0, obs_y + 13.0) {
+                    l_active0 = false;
+                    obs_active = false;
+                    obs_y = -600.0;
+                    score = score + 50.0;
+                    spawn_hit_explosion(obs_x + 13.0, obs_y + 13.0);
+                    audio_beep!(440.0, 0.1, 0.2);
+                }
+            }
+            if l_active1 {
+                if check_laser_hit_drop(l_x1, l_y1, obs_x + 13.0, obs_y + 13.0) {
+                    l_active1 = false;
+                    obs_active = false;
+                    obs_y = -600.0;
+                    score = score + 50.0;
+                    spawn_hit_explosion(obs_x + 13.0, obs_y + 13.0);
+                    audio_beep!(440.0, 0.1, 0.2);
+                }
+            }
+            if l_active2 {
+                if check_laser_hit_drop(l_x2, l_y2, obs_x + 13.0, obs_y + 13.0) {
+                    l_active2 = false;
+                    obs_active = false;
+                    obs_y = -600.0;
+                    score = score + 50.0;
+                    spawn_hit_explosion(obs_x + 13.0, obs_y + 13.0);
+                    audio_beep!(440.0, 0.1, 0.2);
+                }
+            }
+        }
+
+        // --- MEGA BLAST HIT DETECTION ---
+        if mb_active {
+            if check_mega_hit(mb_x, mb_y, d_x0, d_y0) {
+                score = score + 10.0;
+                spawn_hit_explosion(d_x0, d_y0);
+                d_x0 = random_x();
+                d_y0 = -40.0;
+                d_v0 = random_value();
+            }
+            if check_mega_hit(mb_x, mb_y, d_x1, d_y1) {
+                score = score + 10.0;
+                spawn_hit_explosion(d_x1, d_y1);
+                d_x1 = random_x();
+                d_y1 = -40.0 - math_random!() * 100.0;
+                d_v1 = random_value();
+            }
+            if check_mega_hit(mb_x, mb_y, d_x2, d_y2) {
+                score = score + 10.0;
+                spawn_hit_explosion(d_x2, d_y2);
+                d_x2 = random_x();
+                d_y2 = -40.0 - math_random!() * 150.0;
+                d_v2 = random_value();
+            }
+            if check_mega_hit(mb_x, mb_y, d_x3, d_y3) {
+                score = score + 10.0;
+                spawn_hit_explosion(d_x3, d_y3);
+                d_x3 = random_x();
+                d_y3 = -40.0 - math_random!() * 200.0;
+                d_v3 = random_value();
+            }
+            if obs_active {
+                if check_mega_hit(mb_x, mb_y, obs_x + 13.0, obs_y + 13.0) {
+                    obs_active = false;
+                    obs_y = -600.0;
+                    score = score + 50.0;
+                    spawn_hit_explosion(obs_x + 13.0, obs_y + 13.0);
+                }
+            }
+        }
+
+        // --- SHIELD BURST KNOCKBACK ---
+        if shield_burst {
+            let scx: f64 = px + pw / 2.0;
+            let scy: f64 = py + ph / 2.0;
+            let kb: f64 = 100.0 * dt * 10.0;
+            // Push drop 0
+            let dd0x: f64 = d_x0 - scx;
+            let dd0y: f64 = d_y0 - scy;
+            if dd0x > 0.0 { d_x0 = d_x0 + kb; } else { d_x0 = d_x0 - kb; }
+            if dd0y > 0.0 { d_y0 = d_y0 + kb; } else { d_y0 = d_y0 - kb; }
+            // Push drop 1
+            let dd1x: f64 = d_x1 - scx;
+            let dd1y: f64 = d_y1 - scy;
+            if dd1x > 0.0 { d_x1 = d_x1 + kb; } else { d_x1 = d_x1 - kb; }
+            if dd1y > 0.0 { d_y1 = d_y1 + kb; } else { d_y1 = d_y1 - kb; }
+            // Push drop 2
+            let dd2x: f64 = d_x2 - scx;
+            let dd2y: f64 = d_y2 - scy;
+            if dd2x > 0.0 { d_x2 = d_x2 + kb; } else { d_x2 = d_x2 - kb; }
+            if dd2y > 0.0 { d_y2 = d_y2 + kb; } else { d_y2 = d_y2 - kb; }
+            // Push drop 3
+            let dd3x: f64 = d_x3 - scx;
+            let dd3y: f64 = d_y3 - scy;
+            if dd3x > 0.0 { d_x3 = d_x3 + kb; } else { d_x3 = d_x3 - kb; }
+            if dd3y > 0.0 { d_y3 = d_y3 + kb; } else { d_y3 = d_y3 - kb; }
+            // Push obstacle
+            if obs_active {
+                let dox: f64 = obs_x - scx;
+                let doy: f64 = obs_y - scy;
+                if dox > 0.0 { obs_x = obs_x + kb; } else { obs_x = obs_x - kb; }
+                if doy > 0.0 { obs_y = obs_y + kb; } else { obs_y = obs_y - kb; }
+            }
+        }
+
+        // --- DROP SPEED ---
+        drop_speed = 180.0 + (level - 1.0) * 18.0;
+
+        // --- MOVE ALL 4 DROPS (freeze ray stops them) ---
+        if frozen_drops == false {
+            d_wobble0 = d_wobble0 + dt * 4.0;
+            d_y0 = d_y0 + drop_speed * frenzy_speed_mult * dt;
+            d_x0 = d_x0 + math_sin!(d_wobble0) * 0.5;
+            d_wobble1 = d_wobble1 + dt * 3.5;
+            d_y1 = d_y1 + drop_speed * 0.92 * frenzy_speed_mult * dt;
+            d_x1 = d_x1 + math_sin!(d_wobble1) * 0.4;
+            d_wobble2 = d_wobble2 + dt * 4.5;
+            d_y2 = d_y2 + drop_speed * 0.88 * frenzy_speed_mult * dt;
+            d_x2 = d_x2 + math_sin!(d_wobble2) * 0.6;
+            d_wobble3 = d_wobble3 + dt * 3.0;
+            d_y3 = d_y3 + drop_speed * 1.04 * frenzy_speed_mult * dt;
+            d_x3 = d_x3 + math_sin!(d_wobble3) * 0.5;
+        }
+
+        // Clamp X
+        if d_x0 < 10.0 { d_x0 = 10.0; }
+        if d_x0 > 380.0 { d_x0 = 380.0; }
+        if d_x1 < 10.0 { d_x1 = 10.0; }
+        if d_x1 > 380.0 { d_x1 = 380.0; }
+        if d_x2 < 10.0 { d_x2 = 10.0; }
+        if d_x2 > 380.0 { d_x2 = 380.0; }
+        if d_x3 < 10.0 { d_x3 = 10.0; }
+        if d_x3 > 380.0 { d_x3 = 380.0; }
+
+        // --- MOVE OBSTACLE (from level 3+) ---
+        if level >= 3.0 {
+            if obs_active == false {
+                if obs_y < -400.0 {
+                    if math_random!() < 0.005 {
+                        obs_x = random_x();
+                        obs_y = -40.0;
+                        obs_active = true;
+                        obs_type = math_floor!(math_random!() * 3.0);
+                    }
+                }
+            }
+            if obs_active {
+                obs_y = obs_y + drop_speed * 0.7 * dt;
+                if obs_y > 510.0 { obs_active = false; obs_y = -600.0; }
+            }
+        }
+
+        // --- MOVE POWER-UP ---
+        if pow_active == false {
+            if pow_y < -400.0 {
+                if math_random!() < 0.003 {
+                    pow_x = random_x();
+                    pow_y = -40.0;
+                    pow_active = true;
+                    pow_type = math_floor!(math_random!() * 3.0);
+                }
+            }
+        }
+        if pow_active {
+            pow_y = pow_y + drop_speed * 0.6 * dt;
+            if pow_y > 510.0 { pow_active = false; pow_y = -900.0; }
+        }
+
+        // ========= COLLISIONS: Drop 0 =========
+        if d_y0 + 24.0 > py {
+            if d_x0 + 10.0 > px {
+                if d_x0 - 10.0 < px + pw {
+                    handle_drop_catch(d_v0, d_x0, py);
+                    spawn_splash(d_x0, py, drop_color(d_v0));
+                    d_x0 = random_x();
+                    d_y0 = -40.0;
+                    d_v0 = random_value();
+                }
+            }
+        }
+        if d_y0 > py + ph {
+            if d_y0 < py + ph + 15.0 {
+                let dist0: f64 = abs_val(d_x0 - (px + pw / 2.0));
+                if dist0 < pw + 20.0 {
+                    near_miss_timer = 0.8;
+                    near_miss_x = d_x0;
+                    push_notif("SO CLOSE!", "#ff3333", 0.8);
+                }
+            }
+        }
+        if d_y0 > 520.0 {
+            handle_drop_miss();
+            d_x0 = random_x();
+            d_y0 = -40.0;
+            d_v0 = random_value();
+        }
+
+        // ========= COLLISIONS: Drop 1 =========
+        if d_y1 + 24.0 > py {
+            if d_x1 + 10.0 > px {
+                if d_x1 - 10.0 < px + pw {
+                    handle_drop_catch(d_v1, d_x1, py);
+                    spawn_splash(d_x1, py, drop_color(d_v1));
+                    d_x1 = random_x();
+                    d_y1 = -40.0 - math_random!() * 100.0;
+                    d_v1 = random_value();
+                }
+            }
+        }
+        if d_y1 > py + ph {
+            if d_y1 < py + ph + 15.0 {
+                let dist1: f64 = abs_val(d_x1 - (px + pw / 2.0));
+                if dist1 < pw + 20.0 {
+                    near_miss_timer = 0.8;
+                    near_miss_x = d_x1;
+                    push_notif("SO CLOSE!", "#ff3333", 0.8);
+                }
+            }
+        }
+        if d_y1 > 520.0 {
+            handle_drop_miss();
+            d_x1 = random_x();
+            d_y1 = -40.0 - math_random!() * 100.0;
+            d_v1 = random_value();
+        }
+
+        // ========= COLLISIONS: Drop 2 =========
+        if d_y2 + 24.0 > py {
+            if d_x2 + 10.0 > px {
+                if d_x2 - 10.0 < px + pw {
+                    handle_drop_catch(d_v2, d_x2, py);
+                    spawn_splash(d_x2, py, drop_color(d_v2));
+                    d_x2 = random_x();
+                    d_y2 = -40.0 - math_random!() * 150.0;
+                    d_v2 = random_value();
+                }
+            }
+        }
+        if d_y2 > 520.0 {
+            handle_drop_miss();
+            d_x2 = random_x();
+            d_y2 = -40.0 - math_random!() * 150.0;
+            d_v2 = random_value();
+        }
+
+        // ========= COLLISIONS: Drop 3 =========
+        if d_y3 + 24.0 > py {
+            if d_x3 + 10.0 > px {
+                if d_x3 - 10.0 < px + pw {
+                    handle_drop_catch(d_v3, d_x3, py);
+                    spawn_splash(d_x3, py, drop_color(d_v3));
+                    d_x3 = random_x();
+                    d_y3 = -40.0 - math_random!() * 200.0;
+                    d_v3 = random_value();
+                }
+            }
+        }
+        if d_y3 > 520.0 {
+            handle_drop_miss();
+            d_x3 = random_x();
+            d_y3 = -40.0 - math_random!() * 200.0;
+            d_v3 = random_value();
+        }
+
+        // ========= COLLISIONS: Obstacle =========
+        if obs_active {
+            if obs_y + 26.0 > py {
+                if obs_x + 26.0 > px {
+                    if obs_x < px + pw {
+                        obs_active = false;
+                        obs_y = -600.0;
+                        if obs_type == 0.0 {
+                            fill = fill - 10.0;
+                            if fill < 0.0 { fill = 0.0; }
+                            sfx_hit!();
+                            shake = 2.0;
+                        }
+                        if obs_type == 1.0 {
+                            frozen = true;
+                            freeze_timer = 1.5;
+                            sfx_hit!();
+                        }
+                        if obs_type == 2.0 {
+                            fill = fill - 5.0;
+                            if fill < 0.0 { fill = 0.0; }
+                            px = px - 50.0;
+                            if px < 0.0 { px = 0.0; }
+                            sfx_hit!();
+                            shake = 3.0;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ========= COLLISIONS: Power-up =========
+        if pow_active {
+            if pow_y + 28.0 > py {
+                if pow_x + 28.0 > px {
+                    if pow_x < px + pw {
+                        pow_active = false;
+                        pow_y = -900.0;
+                        sfx_powerup!();
+                        shake = 2.0;
+                        powerup_flash_timer = 0.2;
+                        if pow_type == 0.0 {
+                            pw = 140.0;
+                            wide_timer = 5.0;
+                            powerup_flash_color = "#2ecc71";
+                        }
+                        if pow_type == 1.0 {
+                            pepper_rush = true;
+                            rush_timer = 3.0;
+                            powerup_flash_color = "#ffd700";
+                        }
+                        if pow_type == 2.0 {
+                            shield = true;
+                            powerup_flash_color = "#9b59b6";
+                        }
+                    }
+                }
+            }
+        }
+
+        // ========= LEVEL UP (timer based) =========
+        if level_timer <= 0.0 {
+            level_fill_snap = fill;
+            level_stars = 1.0;
+            if fill > 50.0 { level_stars = 2.0; }
+            if fill > 80.0 { level_stars = 3.0; }
+            level = level + 1.0;
+            sfx_levelup!();
+            shake = 3.0;
+            game_state = 4.0;
+            level_complete_timer = 2.0;
+        }
+    }
+
+    // ========= RENDER =========
+    let mut shk_x: f64 = 0.0;
+    let mut shk_y: f64 = 0.0;
+    if shake > 0.0 {
+        shk_x = (math_random!() - 0.5) * shake * 4.0;
+        shk_y = (math_random!() - 0.5) * shake * 4.0;
+    }
+    canvas_save!();
+    canvas_translate!(shk_x, shk_y);
+
+    draw_background();
+
+    // Combo rhythm pulse on background
+    if combo >= 5.0 {
+        let pulse_a: f64 = math_sin!(anim_time * 8.0) * 0.03;
+        canvas_fill_style!("rgba(139,0,35,0.05)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    }
+
+    // Pepper Rush glow
+    if pepper_rush {
+        canvas_fill_style!("rgba(255,215,0,0.08)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    }
+
+    // Jackpot flash
+    if jackpot_timer > 0.0 {
+        canvas_fill_style!("rgba(255,215,0,0.25)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    }
+
+    // Power-up flash
+    if powerup_flash_timer > 0.0 {
+        canvas_fill_style!("rgba(255,255,255,0.15)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    }
+
+    // Combo broken darkness
+    if combo_broken_timer > 0.0 {
+        canvas_fill_style!("rgba(0,0,0,0.2)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    }
+
+    // --- Draw drop trails ---
+    draw_drop_trail(d_x0, d_y0, drop_color(d_v0));
+    draw_drop_trail(d_x1, d_y1, drop_color(d_v1));
+    draw_drop_trail(d_x2, d_y2, drop_color(d_v2));
+    draw_drop_trail(d_x3, d_y3, drop_color(d_v3));
+
+    // --- Draw all 4 drops ---
+    let mut g0: bool = false;
+    if d_v0 >= 10.0 { g0 = true; }
+    if pepper_rush { g0 = true; }
+    let mut c0: String = drop_color(d_v0);
+    if pepper_rush { c0 = "#ffd700"; }
+    draw_teardrop(d_x0, d_y0, 10.0, c0, g0);
+    if d_v0 >= 5.0 {
+        canvas_fill_style!("#fff");
+        canvas_font!("bold 10px Arial");
+        let v0d: f64 = d_v0;
+        canvas_text!("{v0d}x", d_x0 - 8.0, d_y0 + 22.0);
+    }
+
+    let mut g1: bool = false;
+    if d_v1 >= 10.0 { g1 = true; }
+    if pepper_rush { g1 = true; }
+    let mut c1: String = drop_color(d_v1);
+    if pepper_rush { c1 = "#ffd700"; }
+    draw_teardrop(d_x1, d_y1, 10.0, c1, g1);
+    if d_v1 >= 5.0 {
+        canvas_fill_style!("#fff");
+        canvas_font!("bold 10px Arial");
+        let v1d: f64 = d_v1;
+        canvas_text!("{v1d}x", d_x1 - 8.0, d_y1 + 22.0);
+    }
+
+    let mut g2: bool = false;
+    if d_v2 >= 10.0 { g2 = true; }
+    if pepper_rush { g2 = true; }
+    let mut c2: String = drop_color(d_v2);
+    if pepper_rush { c2 = "#ffd700"; }
+    draw_teardrop(d_x2, d_y2, 10.0, c2, g2);
+    if d_v2 >= 5.0 {
+        canvas_fill_style!("#fff");
+        canvas_font!("bold 10px Arial");
+        let v2d: f64 = d_v2;
+        canvas_text!("{v2d}x", d_x2 - 8.0, d_y2 + 22.0);
+    }
+
+    let mut g3: bool = false;
+    if d_v3 >= 10.0 { g3 = true; }
+    if pepper_rush { g3 = true; }
+    let mut c3: String = drop_color(d_v3);
+    if pepper_rush { c3 = "#ffd700"; }
+    draw_teardrop(d_x3, d_y3, 10.0, c3, g3);
+    if d_v3 >= 5.0 {
+        canvas_fill_style!("#fff");
+        canvas_font!("bold 10px Arial");
+        let v3d: f64 = d_v3;
+        canvas_text!("{v3d}x", d_x3 - 8.0, d_y3 + 22.0);
+    }
+
+    // --- Draw obstacle ---
+    if obs_active { draw_obstacle(obs_x, obs_y, obs_type); }
+
+    // --- Draw power-up ---
+    if pow_active { draw_powerup(pow_x, pow_y, pow_type, pow_spin); }
+
+    // --- Draw weapon pickup ---
+    if wp_active { draw_weapon_pickup(wp_x, wp_y, wp_type, wp_spin); }
+
+    // --- Draw laser projectiles ---
+    if l_active0 { draw_laser_beam(l_x0, l_y0, l_ang0); }
+    if l_active1 { draw_laser_beam(l_x1, l_y1, l_ang1); }
+    if l_active2 { draw_laser_beam(l_x2, l_y2, l_ang2); }
+
+    // --- Draw mega blast ---
+    if mb_active { draw_mega_blast(mb_x, mb_y, mb_radius); }
+
+    // --- Draw shield burst ring ---
+    if shield_burst {
+        let sbcx: f64 = px + pw / 2.0;
+        let sbcy: f64 = py + ph / 2.0;
+        draw_shield_burst_ring(sbcx, sbcy, shield_burst_radius);
+    }
+
+    // --- Freeze tint ---
+    if freeze_tint_timer > 0.0 {
+        canvas_fill_style!("rgba(50,100,255,0.15)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    }
+
+    // --- Frozen drop ice crystals ---
+    if frozen_drops {
+        canvas_fill_style!("rgba(100,220,255,0.4)");
+        canvas_circle!(d_x0 + 8.0, d_y0 - 5.0, 3.0);
+        canvas_circle!(d_x0 - 6.0, d_y0 + 3.0, 2.5);
+        canvas_circle!(d_x0 + 3.0, d_y0 + 8.0, 2.0);
+        canvas_circle!(d_x1 + 7.0, d_y1 - 4.0, 3.0);
+        canvas_circle!(d_x1 - 5.0, d_y1 + 4.0, 2.5);
+        canvas_circle!(d_x1 + 2.0, d_y1 + 7.0, 2.0);
+        canvas_circle!(d_x2 + 6.0, d_y2 - 6.0, 3.0);
+        canvas_circle!(d_x2 - 7.0, d_y2 + 2.0, 2.5);
+        canvas_circle!(d_x2 + 4.0, d_y2 + 9.0, 2.0);
+        canvas_circle!(d_x3 + 8.0, d_y3 - 3.0, 3.0);
+        canvas_circle!(d_x3 - 4.0, d_y3 + 5.0, 2.5);
+        canvas_circle!(d_x3 + 5.0, d_y3 + 6.0, 2.0);
+    }
+
+    // --- Hit explosion ---
+    draw_hit_explosion();
+
+    // --- Splash particles ---
+    draw_splash_particles();
+
+    // --- Frenzy particles ---
+    draw_frenzy_particles();
+
+    // --- Draw player can ---
+    draw_dr_pepper_can(px, py, pw, ph, frozen, pepper_rush, shield);
+
+    // Wide indicator
+    if wide_timer > 0.0 {
+        canvas_fill_style!("rgba(46,204,113,0.8)");
+        canvas_font!("bold 10px Arial");
+        let wt: f64 = math_floor!(wide_timer);
+        canvas_text!("WIDE {wt}s", px + 5.0, py - 8.0);
+    }
+    // Frozen indicator
+    if frozen {
+        canvas_fill_style!("rgba(129,212,250,0.8)");
+        canvas_font!("bold 10px Arial");
+        canvas_text!("FROZEN!", px + 5.0, py - 8.0);
+    }
+
+    // --- Near miss red flash ---
+    if near_miss_timer > 0.0 {
+        canvas_fill_style!("rgba(255,0,0,0.06)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    }
+
+    // --- Bonus event flash ---
+    if bonus_timer > 0.0 {
+        canvas_fill_style!("rgba(255,215,0,0.15)");
+        canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    }
+
+    // --- Lucky golden glow ---
+    if lucky_timer > 0.0 {
+        canvas_fill_style!("rgba(255,215,0,0.3)");
+        canvas_circle!(200.0, 190.0, 40.0);
+    }
+
+    // --- Double points indicator ---
+    if double_pts_timer > 0.0 {
+        let dpt: f64 = math_floor!(double_pts_timer);
+        canvas_fill_style!("rgba(255,215,0,0.7)");
+        canvas_font!("bold 11px Arial");
+        canvas_text!("2x POINTS {dpt}s", 5.0, 475.0);
+    }
+
+    // --- Floating score text ---
+    if float_score_timer > 0.0 {
+        let fs_alpha: f64 = float_score_timer;
+        let fs_rise: f64 = (1.0 - float_score_timer) * 40.0;
+        let fsv: f64 = math_floor!(float_score_val);
+        canvas_fill_style!("#ffd700");
+        canvas_font!("bold 16px Arial");
+        canvas_text!("+{fsv}", float_score_x - 15.0, float_score_y - 20.0 - fs_rise);
+    }
+
+    // --- DANGER pulse on last life ---
+    if lives == 1.0 {
+        if game_state == 1.0 {
+            let dp: f64 = math_sin!(danger_pulse);
+            if dp > 0.0 {
+                canvas_fill_style!("#ff0000");
+                canvas_font!("bold 14px Arial");
+                canvas_text!("DANGER!", 170.0, 475.0);
             }
         }
     }
 
-    // Miss
-    if dy > 500.0 {
-        lv = lv - 1;
-        sfx_hit!();
-        dx = math_floor!(math_random!() * 376.0);
-        dy = 0.0 - 32.0;
+    // ========= HUD =========
+    // Semi-transparent header bar
+    canvas_fill_style!("rgba(0,0,0,0.6)");
+    canvas_fill_rect!(0.0, 0.0, 360.0, 35.0);
+
+    // Score - big bold white
+    canvas_fill_style!("#ffffff");
+    canvas_font!("bold 18px Arial");
+    let score_hud: f64 = math_floor!(score);
+    canvas_text!("{score_hud}", 10.0, 24.0);
+
+    // Level + timer top-right
+    canvas_fill_style!("#c9a832");
+    canvas_font!("bold 12px Arial");
+    let level_hud: f64 = math_floor!(level);
+    let timer_hud: f64 = math_floor!(level_timer);
+    canvas_text!("Lv.{level_hud} | {timer_hud}s", 285.0, 24.0);
+
+    // Hearts
+    draw_hearts();
+
+    // Combo display - center screen with scaling
+    if combo > 1.0 {
+        let combo_d: f64 = math_floor!(combo);
+        let mult: f64 = combo_multiplier();
+        let mut base_size: f64 = 14.0 + combo * 1.3;
+        if base_size > 40.0 { base_size = 40.0; }
+        let font_size: f64 = base_size * combo_scale;
+        let fs: f64 = math_floor!(font_size);
+        // Color based on combo level
+        let mut combo_color: String = "#ffffff";
+        if combo >= 5.0 { combo_color = "#ffff00"; }
+        if combo >= 10.0 { combo_color = "#ff8800"; }
+        if combo >= 15.0 { combo_color = "#ff3300"; }
+        if combo >= 20.0 {
+            // Rainbow effect
+            let rainbow_phase: f64 = math_sin!(anim_time * 10.0);
+            if rainbow_phase > 0.33 { combo_color = "#ff0066"; }
+            if rainbow_phase > -0.33 {
+                if rainbow_phase <= 0.33 { combo_color = "#00ffcc"; }
+            }
+            if rainbow_phase <= -0.33 { combo_color = "#ffdd00"; }
+        }
+        canvas_fill_style!(combo_color);
+        canvas_font!("bold {fs}px Arial");
+        canvas_text!("{combo_d}x COMBO!", 110.0, 60.0);
+        if mult > 1.0 {
+            canvas_fill_style!("#ff6b35");
+            canvas_font!("bold 12px Arial");
+            canvas_text!("{mult}x MULTIPLIER", 125.0, 78.0);
+        }
     }
 
-    // Draw
-    canvas_fill_style!("#1a1a2e");
-    canvas_fill_rect!(0.0, 0.0, 400.0, 500.0);
+    // Notification queue
+    draw_notifications(dt);
 
-    if lv <= 0 {
-        canvas_fill_style!("#e94560");
-        canvas_font!("bold 28px monospace");
-        canvas_text!("GAME OVER", 85.0, 220.0);
-        canvas_fill_style!("#eee");
-        canvas_font!("20px monospace");
-        canvas_text!("Score: {sc}", 130.0, 270.0);
+    // Fill meter
+    draw_fill_meter(fill);
+
+    // Pepper Rush timer indicator (compact)
+    if pepper_rush {
+        let rt: f64 = math_floor!(rush_timer);
+        canvas_fill_style!("rgba(255,215,0,0.7)");
+        canvas_font!("bold 11px Arial");
+        canvas_text!("RUSH {rt}s", 5.0, 435.0);
     }
 
-    canvas_fill_style!("#e94560");
-    canvas_fill_rect!(px, 460.0, 60.0, 14.0);
+    // Shield indicator
+    if shield {
+        canvas_fill_style!("rgba(155,89,182,0.7)");
+        canvas_font!("bold 10px Arial");
+        canvas_text!("SHIELD", 5.0, 460.0);
+    }
 
-    canvas_fill_style!("#8b0000");
-    canvas_fill_rect!(dx, dy, 24.0, 32.0);
-    canvas_fill_style!("#fff");
-    canvas_font!("bold 8px monospace");
-    canvas_text!("DP", dx + 4.0, dy + 20.0);
+    // Social proof - bottom of screen
+    let fake_d: f64 = math_floor!(fake_catches);
+    canvas_fill_style!("rgba(255,255,255,0.25)");
+    canvas_font!("10px Arial");
+    canvas_text!("{fake_d} drops caught today", 130.0, 498.0);
 
-    canvas_fill_style!("#eee");
-    canvas_font!("16px monospace");
-    canvas_text!("Score: {sc}", 10.0, 24.0);
-    canvas_text!("Lives: {lv}", 310.0, 24.0);
+    // XP bar at very bottom
+    let xp_pct: f64 = xp_bar / 20.0;
+    canvas_fill_style!("rgba(255,255,255,0.1)");
+    canvas_fill_rect!(0.0, 494.0, 400.0, 6.0);
+    canvas_fill_style!("rgba(201,168,50,0.5)");
+    canvas_fill_rect!(0.0, 494.0, xp_pct * 400.0, 6.0);
+
+    // Mute indicator
+    if muted {
+        canvas_fill_style!("rgba(255,255,255,0.4)");
+        canvas_font!("10px Arial");
+        canvas_text!("MUTED (M)", 5.0, 445.0);
+    }
+
+    // Weapon HUD
+    draw_weapon_hud();
+
+    canvas_restore!();
 }
 
 fn main() with IO {
     canvas_size!(400, 500);
-    audio_init!();
-    println!("Mini Game — Arrow keys or mouse/touch!");
+    println!("Dr Pepper: Catch the Drop!");
+    println!("Arrow keys / WASD / mouse / touch to move");
+    println!("M = Mute | ESC = Pause");
     canvas_animate!(frame);
 }
