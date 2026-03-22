@@ -68,6 +68,43 @@ $ cbang check main.cb
 ✓ Formal properties proven: 4/4
 ```
 
+### Security Audit
+
+Run `cbang audit` on any `.cb` file to get a full security report showing which vulnerability classes are structurally impossible, checker results, and a security score:
+
+```
+$ cbang audit app.cb
+
+╔══════════════════════════════════════════════════════════════════╗
+║  C! (C-Bang)  Security Audit Report                      v0.1.0  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+  File:  app.cb
+  Lines: 18  │  Tokens: 103  │  Top-level: 3
+
+  ── VULNERABILITY CLASSES ────────────────────────────────────────
+  ✓ Buffer overflow      IMPOSSIBLE   bounded arrays, no raw pointers
+  ✓ Use-after-free       IMPOSSIBLE   linear types
+  ✓ Double-spend         IMPOSSIBLE   linear tokens transfer only once
+  ✓ Reentrancy           IMPOSSIBLE   linear state locked during mutation
+  ✓ SQL injection        IMPOSSIBLE   typed query builders, no string concat
+  ✓ XSS                  IMPOSSIBLE   typed HTML templates, auto-escaped
+  ✓ Null pointer deref   IMPOSSIBLE   Option<T> enforced, no null
+  ✓ Data races           IMPOSSIBLE   actor model (2 actors, no shared state)
+  ✓ Integer overflow     CHECKED      refinement types (3 constraints)
+  ✓ Effect leakage       DECLARED     IO, Network effects declared
+
+  ── CHECKER RESULTS ──────────────────────────────────────────────
+  ✓ Lexer        passed    ✓ Types        passed
+  ✓ Parser       passed    ✓ Ownership    passed
+  ✓ Name Res.    passed    ✓ Refinement   passed
+  ✓ Intent       passed    ✓ Effects      passed
+
+  ──────────────────────────────────────────────────────────────────
+  Audit score: 10/10  ★★★★★  SECURE
+  7 vulnerability classes are structurally impossible in this file.
+```
+
 ### One Language, Every Target
 
 Write once. Deploy to servers, browsers, and blockchains:
