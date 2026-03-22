@@ -36,6 +36,7 @@ import { registerInputMacros } from './macros/input-macros.js';
 import { registerSceneMacros } from './macros/scene-macros.js';
 import { registerSpriteMacros } from './macros/sprite-macros.js';
 import { registerNetMacros } from './macros/net-macros.js';
+import { ACTOR_RUNTIME } from './runtime/actor-runtime.js';
 
 // Register all macro handlers at module load time
 registerMathMacros();
@@ -60,11 +61,18 @@ export class JsGenerator {
     this.classNames = new Set();
 
     // Pre-pass: collect names of class-like declarations
+    let hasActors = false;
     for (const item of program.items) {
       if (item.kind === 'ActorDecl' || item.kind === 'ContractDecl' ||
           item.kind === 'ServerDecl' || item.kind === 'ComponentDecl') {
         this.classNames.add(item.name);
       }
+      if (item.kind === 'ActorDecl') hasActors = true;
+    }
+
+    // Inject actor runtime when program uses actors
+    if (hasActors) {
+      this.output += ACTOR_RUNTIME + '\n';
     }
 
     for (let i = 0; i < program.items.length; i++) {
@@ -260,10 +268,16 @@ export class JsGenerator {
       this.writeLine('}');
     }
 
-    // Supervise declarations → comments
+    // Supervise declarations → runtime supervision setup
     for (const sup of superviseDecls) {
       this.writeLine('');
-      this.writeLine(`/* supervise ${sup.childName} */`);
+      const opts: string[] = [];
+      for (const opt of sup.options) {
+        const val = this.exprToString(opt.value);
+        opts.push(`${opt.key}: ${val}`);
+      }
+      const optsStr = opts.length > 0 ? `{ ${opts.join(', ')} }` : '{}';
+      this.writeLine(`/* supervise ${sup.childName} ${optsStr} */`);
     }
 
     this.classStateFields = new Set();
@@ -433,12 +447,14 @@ export class JsGenerator {
         break;
       case 'EmitStmt': {
         const args = stmt.args.map(a => this.exprToString(a)).join(', ');
-        this.writeLine(`/* emit ${stmt.eventName}(${args}) */`);
+        const argsArray = args ? `[${args}]` : '[]';
+        this.writeLine(`this.__ref.send('${stmt.eventName}', ${argsArray});`);
         break;
       }
       case 'SpawnStmt': {
         const args = stmt.args.map(a => this.exprToString(a)).join(', ');
-        this.writeLine(`/* spawn ${stmt.actor}(${args}) */`);
+        const argsArray = args ? `[${args}]` : '[]';
+        this.writeLine(`__actor.spawn(${stmt.actor}, ${argsArray});`);
         break;
       }
       case 'DeployStmt': {

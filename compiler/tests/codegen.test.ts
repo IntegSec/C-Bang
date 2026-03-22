@@ -523,13 +523,14 @@ function early_exit() {
       expect(js).toContain('export class Service {');
     });
 
-    it('generates supervise declarations as comments', () => {
+    it('generates supervise declarations with options', () => {
       const js = generate(`
         actor Application {
           supervise Worker { restart: .always }
         }
       `);
-      expect(js).toContain('/* supervise Worker */');
+      expect(js).toContain('/* supervise Worker');
+      expect(js).toContain('restart:');
     });
 
     it('generates actor with annotations', () => {
@@ -935,7 +936,7 @@ function early_exit() {
   // ─── 27. Emit statements ──────────────────────────────────────────
 
   describe('emit statements', () => {
-    it('generates emit as comment', () => {
+    it('generates emit as runtime send', () => {
       const js = generate(`
         actor Counter {
           state count: i32 = 0
@@ -945,7 +946,45 @@ function early_exit() {
           }
         }
       `);
-      expect(js).toContain('/* emit CountChanged(this.count) */');
+      expect(js).toContain("this.__ref.send('CountChanged', [this.count])");
+    });
+  });
+
+  // ─── 27b. Actor runtime injection ────────────────────────────────
+
+  describe('actor runtime', () => {
+    it('injects actor runtime when program has actors', () => {
+      const js = generate(`
+        actor Counter {
+          state count: i32 = 0
+        }
+      `);
+      expect(js).toContain('var __actor = (function()');
+      expect(js).toContain('ActorRef');
+      expect(js).toContain('spawn');
+    });
+
+    it('does not inject actor runtime when no actors', () => {
+      const js = generate(`
+        fn main() {
+          let x: i32 = 1;
+        }
+      `);
+      expect(js).not.toContain('__actor');
+    });
+
+    it('generates spawn as runtime call', () => {
+      const js = generate(`
+        actor Worker {
+          state busy: bool = false
+        }
+        actor App {
+          fn start() {
+            spawn Worker();
+          }
+        }
+      `);
+      expect(js).toContain('__actor.spawn(Worker, [])');
     });
   });
 
