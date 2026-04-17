@@ -1,0 +1,27 @@
+// Same intent as vulnerable.cb but written using safe primitives.
+// `cbang audit` should report zero findings for this file.
+//
+// Run:  cbang audit examples/security/clean.cb
+
+fn login(name: String, supplied: String) with Database, Network, Crypto {
+    // Secrets come from the environment, never from source.
+    let api_key: String = env_var("STRIPE_API_KEY");
+
+    // Modern hash function.
+    let stored: String = sha256(supplied);
+
+    // TLS endpoint.
+    let endpoint: String = "https://auth.example.net/v1/login";
+
+    // Parameterized query — no string concat.
+    query_params("SELECT * FROM users WHERE name = ?", name);
+
+    // CSPRNG-backed token.
+    let token: Bytes = secure_random_bytes(32);
+
+    // Typed argv, no shell interpolation.
+    run_argv("login", name);
+
+    // Safe path joined under a known root.
+    let log_path: String = safe_join("/var/log/app", "current.log");
+}

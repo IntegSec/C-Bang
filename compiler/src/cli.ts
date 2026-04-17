@@ -26,6 +26,8 @@ import { createInterface } from 'node:readline';
 import { Lexer, TokenType, Parser, formatDiagnostic, createError, VERSION } from './index.js';
 import { Resolver } from './semantic/index.js';
 import { Checker, OwnershipChecker, RefinementChecker, IntentChecker, EffectChecker } from './checker/index.js';
+import { scanPatterns, severityWeight } from './audit/index.js';
+import type { Finding } from './audit/index.js';
 import type { Program, TopLevelItem } from './ast/index.js';
 
 function main(): void {
@@ -105,14 +107,31 @@ function main(): void {
       process.exit(0);
       break;
 
-    case 'audit':
-      if (!file) {
+    case 'audit': {
+      const fmtIdx = args.indexOf('--format');
+      const format = fmtIdx >= 0 ? (args[fmtIdx + 1] ?? 'text') : 'text';
+      // Strip the command name and any --format <val> pair, take the first positional as the file.
+      const positional = args.slice(1).filter((a, i) => {
+        const absIdx = i + 1;
+        if (absIdx === fmtIdx || absIdx === fmtIdx + 1) return false;
+        return !a.startsWith('-');
+      });
+      const auditFile = positional[0];
+      if (!auditFile) {
         console.error('Error: missing file argument');
-        console.error('Usage: cbang audit <file.cb>');
+        console.error('Usage: cbang audit [--format text|json|sarif] <file.cb>');
         process.exit(1);
       }
-      auditCommand(file);
+      switch (format) {
+        case 'text': auditCommand(auditFile); break;
+        case 'json': auditJsonCommand(auditFile); break;
+        case 'sarif': auditSarifCommand(auditFile); break;
+        default:
+          console.error(`Unknown audit format: ${format} (expected text|json|sarif)`);
+          process.exit(1);
+      }
       break;
+    }
 
     default:
       console.error(`Unknown command: ${command}`);
@@ -667,7 +686,8 @@ COMMANDS:
   build --target near <file.cb>  Compile to NEAR WASM
   repl                Interactive REPL
   verify <file.cb>    Formal verification [not yet implemented]
-  audit <file.cb>     Security audit report
+  audit [--format text|json|sarif] <file.cb>
+                       Security audit report (default: text)
 
 OPTIONS:
   --version, -v       Show version
@@ -928,12 +948,24 @@ function auditCommand(filePath: string): void {
   results['intent']    = runChecker(() => new IntentChecker().check(program));
   results['effects']   = runChecker(() => new EffectChecker().check(program));
 
-  const allOk      = Object.values(results).every(r => r.ok);
+  // ── Pattern-based vulnerability scan ───────────────────────────────────────
+  let findings: Finding[] = [];
+  try { findings = scanPatterns(program); } catch { findings = []; }
+  const findingCounts = {
+    critical: findings.filter(f => f.severity === 'critical').length,
+    high:     findings.filter(f => f.severity === 'high').length,
+    medium:   findings.filter(f => f.severity === 'medium').length,
+    low:      findings.filter(f => f.severity === 'low').length,
+    info:     findings.filter(f => f.severity === 'info').length,
+  };
+  const findingsWeight = findings.reduce((s, f) => s + severityWeight(f.severity), 0);
+
+  const allOk      = Object.values(results).every(r => r.ok) && findingCounts.critical === 0 && findingCounts.high === 0;
   const totalWarn  = Object.values(results).reduce((s, r) => s + r.warnings, 0);
   const totalErr   = Object.values(results).reduce((s, r) => s + r.errors,   0);
 
   // ── Score (0-10) ─────────────────────────────────────────────────────────
-  const score = Math.max(0, 10 - totalErr * 2 - Math.floor(totalWarn / 2));
+  const score = Math.max(0, 10 - totalErr * 2 - Math.floor(totalWarn / 2) - findingsWeight);
 
   // ╔══════════════════════════════════════════════════════════════════╗
   const W = 66;
@@ -1008,6 +1040,38 @@ function auditCommand(filePath: string): void {
     console.log(`  ${g('✓')} ${vuln.padEnd(20)} ${statusStr}  ${d(detail)}`);
   }
 
+  // ── DETECTED ISSUES ─────────────────────────────────────────────────────────
+  console.log('');
+  console.log(c(`  ── DETECTED ISSUES ${line.slice(20)}`));
+  if (findings.length === 0) {
+    console.log(`  ${g('✓')} no vulnerable patterns detected by the scanner`);
+  } else {
+    const severityChip = (sev: Finding['severity']) => {
+      switch (sev) {
+        case 'critical': return `${C.bgRed}${C.bold} CRITICAL ${C.reset}`;
+        case 'high':     return `${C.red}${C.bold}HIGH    ${C.reset}`;
+        case 'medium':   return `${C.yellow}${C.bold}MEDIUM  ${C.reset}`;
+        case 'low':      return `${C.cyan}LOW     ${C.reset}`;
+        case 'info':     return d('INFO    ');
+      }
+    };
+    for (const f of findings) {
+      const loc = `${filePath}:${f.span.start.line}:${f.span.start.column}`;
+      console.log(`  ${severityChip(f.severity)} ${b(f.code)} ${f.message}`);
+      console.log(`           ${d(loc)}`);
+      if (f.suggestion) console.log(`           ${d('→ ' + f.suggestion)}`);
+    }
+    console.log('');
+    const counts = [
+      findingCounts.critical && `${C.red}${findingCounts.critical} critical${C.reset}`,
+      findingCounts.high     && `${C.red}${findingCounts.high} high${C.reset}`,
+      findingCounts.medium   && `${C.yellow}${findingCounts.medium} medium${C.reset}`,
+      findingCounts.low      && `${findingCounts.low} low`,
+      findingCounts.info     && `${findingCounts.info} info`,
+    ].filter(Boolean).join(', ');
+    console.log(`  ${b('Totals:')} ${counts}`);
+  }
+
   // ── CHECKER RESULTS ────────────────────────────────────────────────────────
   console.log('');
   console.log(c(`  ── CHECKER RESULTS ${line.slice(20)}`));
@@ -1037,22 +1101,228 @@ function auditCommand(filePath: string): void {
 
   const impossible = vulns.filter(([, s]) => s === 'IMPOSSIBLE').length;
 
-  if (allOk && totalErr === 0) {
+  const blockingFindings = findingCounts.critical + findingCounts.high;
+
+  if (allOk && totalErr === 0 && blockingFindings === 0) {
     const star = score >= 9 ? '★★★★★' : score >= 7 ? '★★★★☆' : '★★★☆☆';
     console.log(`  ${b(g(`Audit score: ${score}/10  ${star}  SECURE`))}`);
     console.log(`  ${g(`${impossible} vulnerability classes are structurally impossible in this file.`)}`);
+    if (findingCounts.medium + findingCounts.low > 0) {
+      console.log(`  ${y(`${findingCounts.medium + findingCounts.low} non-blocking finding${findingCounts.medium + findingCounts.low > 1 ? 's' : ''} — review recommended`)}`);
+    }
   } else {
     console.log(`  ${b(`${C.red}Audit score: ${score}/10  — FIX REQUIRED${C.reset}`)}`);
-    console.log(`  ${`${C.red}${totalErr} error${totalErr > 1 ? 's' : ''} found. Run 'cbang check ${filePath}' for details.${C.reset}`}`);
+    if (totalErr > 0) {
+      console.log(`  ${`${C.red}${totalErr} checker error${totalErr > 1 ? 's' : ''} — run 'cbang check ${filePath}' for details.${C.reset}`}`);
+    }
+    if (blockingFindings > 0) {
+      console.log(`  ${`${C.red}${blockingFindings} blocking finding${blockingFindings > 1 ? 's' : ''} (critical/high) detected by audit scanner.${C.reset}`}`);
+    }
   }
 
   if (totalWarn > 0) {
-    console.log(`  ${y(`${totalWarn} warning${totalWarn > 1 ? 's' : ''} — review recommended`)}`);
+    console.log(`  ${y(`${totalWarn} warning${totalWarn > 1 ? 's' : ''} from checkers`)}`);
   }
 
   console.log('');
 
-  process.exit(allOk ? 0 : 1);
+  process.exit(allOk && totalErr === 0 && blockingFindings === 0 ? 0 : 1);
+}
+
+// ─── audit: structured output (JSON / SARIF) ───────────────────────────────
+
+interface AuditCheckerResult {
+  ok: boolean;
+  warnings: number;
+  errors: number;
+}
+
+interface AuditScanData {
+  filePath: string;
+  source: string;
+  findings: Finding[];
+  checkers: Record<string, AuditCheckerResult>;
+  totalErrors: number;
+  totalWarnings: number;
+  blockingFindings: number;
+  score: number;
+}
+
+/** Run lex/parse/all checkers + pattern scan and collect results. */
+function collectAuditData(filePath: string): AuditScanData {
+  const source = readSource(filePath);
+  const tokens = new Lexer(source, filePath).tokenize();
+  const lexErrors = tokens.filter(t => t.type === TokenType.Error).length;
+
+  const parser = new Parser(tokens);
+  const { program, diagnostics: parseDiags } = parser.parse();
+
+  const runChecker = (fn: () => { severity: string }[]): AuditCheckerResult => {
+    try {
+      const diags = fn();
+      return {
+        ok: diags.filter(d => d.severity === 'error').length === 0,
+        errors: diags.filter(d => d.severity === 'error').length,
+        warnings: diags.filter(d => d.severity === 'warning').length,
+      };
+    } catch {
+      return { ok: false, warnings: 0, errors: 1 };
+    }
+  };
+
+  const resolver = new Resolver();
+  const nameDiags = resolver.resolve(program);
+
+  const checkers: Record<string, AuditCheckerResult> = {
+    lexer:      { ok: lexErrors === 0, warnings: 0, errors: lexErrors },
+    parser:     { ok: parseDiags.length === 0, warnings: 0, errors: parseDiags.length },
+    nameResolver: { ok: nameDiags.length === 0, warnings: 0, errors: nameDiags.length },
+    types:      runChecker(() => new Checker().check(program)),
+    ownership:  runChecker(() => new OwnershipChecker().check(program)),
+    refinement: runChecker(() => new RefinementChecker().check(program)),
+    intent:     runChecker(() => new IntentChecker().check(program)),
+    effects:    runChecker(() => new EffectChecker().check(program)),
+  };
+
+  let findings: Finding[] = [];
+  try { findings = scanPatterns(program); } catch { findings = []; }
+
+  const totalErrors = Object.values(checkers).reduce((s, r) => s + r.errors, 0);
+  const totalWarnings = Object.values(checkers).reduce((s, r) => s + r.warnings, 0);
+  const findingsWeight = findings.reduce((s, f) => s + severityWeight(f.severity), 0);
+  const blockingFindings = findings.filter(f => f.severity === 'critical' || f.severity === 'high').length;
+  const score = Math.max(0, 10 - totalErrors * 2 - Math.floor(totalWarnings / 2) - findingsWeight);
+
+  return { filePath, source, findings, checkers, totalErrors, totalWarnings, blockingFindings, score };
+}
+
+/** Map cbang severity → SARIF level. */
+function sarifLevel(sev: Finding['severity']): 'error' | 'warning' | 'note' {
+  if (sev === 'critical' || sev === 'high') return 'error';
+  if (sev === 'medium') return 'warning';
+  return 'note';
+}
+
+/** Stable list of all rules emitted by the pattern scanner (for SARIF rules section). */
+const SARIF_RULES: ReadonlyArray<{ id: string; name: string; shortDescription: string; helpText: string }> = [
+  { id: 'SEC001', name: 'hardcoded_secret',  shortDescription: 'Hardcoded credential bound to a credential-named identifier.', helpText: 'Load secrets from env/secret-store, never commit literals.' },
+  { id: 'SEC002', name: 'weak_crypto',       shortDescription: 'Use of cryptographically broken primitive (MD5/SHA1/DES/RC4).', helpText: 'Use SHA-256+ for hashing, AES-GCM/ChaCha20 for encryption.' },
+  { id: 'SEC003', name: 'dangerous_eval',    shortDescription: 'Dynamic-execution sink (eval/exec/system) — possible code/command injection.', helpText: 'Replace with typed APIs; validate inputs against an allow-list.' },
+  { id: 'SEC004', name: 'insecure_url',      shortDescription: 'Cleartext http:// URL — traffic is unencrypted and tamperable.', helpText: 'Use https:// or constrain to localhost for development only.' },
+  { id: 'SEC005', name: 'path_traversal',    shortDescription: 'Literal path contains a ".." segment — potential path traversal.', helpText: 'Canonicalize paths and validate against an allow-listed root.' },
+  { id: 'SEC006', name: 'sql_concat',        shortDescription: 'SQL string concatenation passed to a query sink — likely SQL injection.', helpText: 'Use parameterized queries / prepared statements.' },
+  { id: 'SEC007', name: 'weak_random',       shortDescription: 'Non-cryptographic randomness used where CSPRNG is expected.', helpText: 'Use Crypto.random / SecureRandom for tokens, keys and nonces.' },
+  { id: 'SEC008', name: 'todo_security',     shortDescription: 'Security-related TODO/FIXME left in source.', helpText: 'Resolve before shipping; security TODOs become incidents.' },
+];
+
+function auditAsJson(data: AuditScanData): unknown {
+  const { filePath, findings, checkers, totalErrors, totalWarnings, blockingFindings, score } = data;
+  return {
+    tool: { name: 'cbang audit', version: VERSION },
+    file: filePath,
+    score,
+    pass: data.checkers.lexer.ok
+      && checkers.parser.ok
+      && checkers.nameResolver.ok
+      && checkers.types.ok
+      && totalErrors === 0
+      && blockingFindings === 0,
+    summary: {
+      checkerErrors: totalErrors,
+      checkerWarnings: totalWarnings,
+      blockingFindings,
+      totalFindings: findings.length,
+      bySeverity: {
+        critical: findings.filter(f => f.severity === 'critical').length,
+        high:     findings.filter(f => f.severity === 'high').length,
+        medium:   findings.filter(f => f.severity === 'medium').length,
+        low:      findings.filter(f => f.severity === 'low').length,
+        info:     findings.filter(f => f.severity === 'info').length,
+      },
+    },
+    checkers,
+    findings: findings.map(f => ({
+      code: f.code,
+      category: f.category,
+      severity: f.severity,
+      message: f.message,
+      suggestion: f.suggestion,
+      location: {
+        file: f.span.file,
+        startLine: f.span.start.line,
+        startColumn: f.span.start.column,
+        endLine: f.span.end.line,
+        endColumn: f.span.end.column,
+      },
+    })),
+  };
+}
+
+function auditAsSarif(data: AuditScanData): unknown {
+  const { filePath, findings } = data;
+  const fileUri = filePath.startsWith('/')
+    ? `file://${filePath}`
+    : filePath;
+
+  return {
+    $schema: 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json',
+    version: '2.1.0',
+    runs: [{
+      tool: {
+        driver: {
+          name: 'cbang-audit',
+          version: VERSION,
+          informationUri: 'https://github.com/integsec/C-Bang',
+          rules: SARIF_RULES.map(r => ({
+            id: r.id,
+            name: r.name,
+            shortDescription: { text: r.shortDescription },
+            help: { text: r.helpText },
+            defaultConfiguration: {
+              level: r.id === 'SEC003' || r.id === 'SEC006' ? 'error'
+                   : r.id === 'SEC008' || r.id === 'SEC007' || r.id === 'SEC004' ? 'warning'
+                   : 'error',
+            },
+          })),
+        },
+      },
+      results: findings.map(f => ({
+        ruleId: f.code,
+        level: sarifLevel(f.severity),
+        message: { text: f.message + (f.suggestion ? ` (suggestion: ${f.suggestion})` : '') },
+        locations: [{
+          physicalLocation: {
+            artifactLocation: { uri: fileUri },
+            region: {
+              startLine: f.span.start.line,
+              startColumn: f.span.start.column,
+              endLine: f.span.end.line,
+              endColumn: f.span.end.column,
+            },
+          },
+        }],
+        properties: { severity: f.severity, category: f.category },
+      })),
+      invocations: [{
+        executionSuccessful: data.totalErrors === 0,
+        exitCode: data.totalErrors === 0 && data.blockingFindings === 0 ? 0 : 1,
+      }],
+    }],
+  };
+}
+
+function auditJsonCommand(filePath: string): void {
+  const data = collectAuditData(filePath);
+  process.stdout.write(JSON.stringify(auditAsJson(data), null, 2) + '\n');
+  const exitCode = data.totalErrors === 0 && data.blockingFindings === 0 ? 0 : 1;
+  process.exit(exitCode);
+}
+
+function auditSarifCommand(filePath: string): void {
+  const data = collectAuditData(filePath);
+  process.stdout.write(JSON.stringify(auditAsSarif(data), null, 2) + '\n');
+  const exitCode = data.totalErrors === 0 && data.blockingFindings === 0 ? 0 : 1;
+  process.exit(exitCode);
 }
 
 function handleError(e: unknown): void {
