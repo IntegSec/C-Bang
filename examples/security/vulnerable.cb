@@ -1,0 +1,30 @@
+// Deliberately vulnerable file used to demonstrate `cbang audit`.
+// Every issue here should be flagged by the pattern scanner.
+//
+// Run:  cbang audit examples/security/vulnerable.cb
+
+fn login(name: String, supplied: String) {
+    // SEC001 — credential committed to source
+    let api_key: String = "EXAMPLE_NOT_A_REAL_KEY_DO_NOT_USE";
+
+    // SEC002 — broken hash function
+    let stored: String = md5(supplied);
+
+    // SEC004 — cleartext transport for an auth call
+    let endpoint: String = "http://auth.example.net/v1/login";
+
+    // SEC006 — SQL injection through string concatenation
+    query("SELECT * FROM users WHERE name = '" + name + "'");
+
+    // SEC007 — non-cryptographic randomness used for a token
+    let token: i64 = rand();
+
+    // SEC003 — dynamic shell execution with user-controlled input
+    system(name);
+
+    // SEC005 — path traversal literal
+    let log_path: String = "../../var/log/app.log";
+
+    // SEC008 — security TODO left in source
+    let note: String = "TODO: sanitize input before shell exec";
+}
